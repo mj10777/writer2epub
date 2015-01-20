@@ -328,34 +328,34 @@ End Sub
 
 Sub CreateW2Esignature
 
-	Open MyEpubFolder + &quot;/text/w2e.xhtml&quot; For Output As #1
+	Open MyEpubFolder + &quot;/OEBPS/text/w2e.xhtml&quot; For Output As #1
 	Print #1, &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot;
 	Print #1, &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot;
 	Print #1, &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot;
 	Print #1, &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot;
-	Print #1, &quot; &lt;head&gt;&quot;
-	Print #1, &quot; &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot;
-	Print #1, &quot; &lt;title&gt;&lt;/title&gt;&quot;
-	Print #1, &quot; &lt;/head&gt;&quot;
-	Print #1, &quot; &lt;body&gt;&quot;
-	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
-	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
-	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
-	Print #1, &quot;  &lt;div class=&quot;&quot;center&quot;&quot;&gt;&lt;img src=&quot;&quot;../images/w2e.jpg&quot;&quot; width=&quot;&quot;27%&quot;&quot; alt=&quot;&quot;Writer2ePub&quot;&quot; /&gt;&lt;/div&gt;&quot;
-	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
-	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&lt;a href=&quot;&quot;http://writer2epub.it&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;Created with &lt;/span&gt;&lt;span class=&quot;&quot;underline&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;Writer2ePub&lt;/span&gt;&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&quot;
-	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;by Luca Calcinai&lt;/span&gt;&lt;/p&gt;&quot;
-	Print #1, &quot;  &lt;p&gt;&nbsp;&lt;/p&gt;&quot;
-	Print #1, &quot;  &lt;p&gt;&nbsp;&lt;/p&gt;&quot;
-	Print #1, &quot; &lt;/body&gt;&quot;
+	Print #1, &quot;&lt;head&gt;&quot;
+	Print #1, &quot;&lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style001.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot;
+	Print #1, &quot;&lt;title&gt;&lt;/title&gt;&quot;
+	Print #1, &quot;&lt;/head&gt;&quot;
+	Print #1, &quot;&lt;body&gt;&quot;
+	Print #1, &quot;&lt;p class=&quot;&quot;center&quot;&quot;&gt;&amp;nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;p class=&quot;&quot;center&quot;&quot;&gt;&amp;nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;p class=&quot;&quot;center&quot;&quot;&gt;&amp;nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;div class=&quot;&quot;center&quot;&quot;&gt;&lt;img src=&quot;&quot;../images/w2e.jpg&quot;&quot; width=&quot;&quot;27%&quot;&quot; alt=&quot;&quot;Writer2ePub&quot;&quot; /&gt;&lt;/div&gt;&quot;
+	Print #1, &quot;&lt;p class=&quot;&quot;center&quot;&quot;&gt;&amp;nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;p class=&quot;&quot;center&quot;&quot;&gt;&lt;a href=&quot;&quot;http://writer2epub.it&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;Created with &lt;/span&gt;&lt;span class=&quot;&quot;underline&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;Writer2ePub&lt;/span&gt;&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;p class=&quot;&quot;center&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;by Luca Calcinai&lt;/span&gt;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;&lt;/body&gt;&quot;
 	Print #1, &quot;&lt;/html&gt;&quot;
 	Close #1
 	
-	If Not FileExists (MyEpubFolder &amp; &quot;/images/&quot;) Then
-		MkDir (MyEpubFolder &amp; &quot;/images/&quot;)
+	If Not FileExists (MyEpubFolder &amp; &quot;/OEBPS/images/&quot;) Then
+		MkDir (MyEpubFolder &amp; &quot;/OEBPS/images/&quot;)
 	End If
 	
-	Filecopy extensionLocation() &amp; &quot;/icons/Writer2Epub-200x120.jpg&quot;, MyEpubFolder &amp; &quot;/images/w2e.jpg&quot;
+	Filecopy extensionLocation() &amp; &quot;/icons/Writer2Epub-200x120.jpg&quot;, MyEpubFolder &amp; &quot;/OEBPS/images/w2e.jpg&quot;
 
 End Sub
   

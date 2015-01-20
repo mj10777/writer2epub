@@ -67,18 +67,10 @@ Dim sContentUrl As String
 	bIncludeFolders = True
 		
 	mFolderContents() = oFileAccess.getFolderContents(sSourceDirUrl, bIncludeFolders)
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "fonts", oZipRootFolder, oPackage )
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "images", oZipRootFolder, oPackage )
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "META-INF", oZipRootFolder, oPackage )
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "styles", oZipRootFolder, oPackage )
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "text", oZipRootFolder, oPackage )
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "mimetype", oZipRootFolder, oPackage,  False )
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "content.opf", oZipRootFolder, oPackage,  False )
-	AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "toc.ncx", oZipRootFolder, oPackage,  False )
-	&apos; AddResourceToZip(sSourceDirUrl &amp; &quot;/&quot; &amp; &quot;OEBPS&quot;, oZipRootFolder, oPackage )
-	&apos; AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "META-INF", oZipRootFolder, oPackage )
-	&apos; AddResourceToZip(sSourceDirUrl &amp; "/" &amp; "mimetype", oZipRootFolder, oPackage,  False )
-	&apos;commit -uno_package-
+	AddResourceToZip(sSourceDirUrl &amp; &quot;/&quot; &amp; &quot;OEBPS&quot;, oZipRootFolder, oPackage )
+	AddResourceToZip(sSourceDirUrl &amp; &quot;/&quot; &amp; &quot;META-INF&quot;, oZipRootFolder, oPackage )
+	AddResourceToZip(sSourceDirUrl &amp; &quot;/&quot; &amp; &quot;mimetype&quot;, oZipRootFolder, oPackage,  False )
+	&apos;commit
 	&apos;the second call avoids an unespected file locking in Windows (bug??)
  	oPackage.commitChanges()
  	oPackage.commitChanges()

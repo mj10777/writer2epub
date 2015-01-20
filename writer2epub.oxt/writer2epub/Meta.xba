@@ -479,10 +479,10 @@ Function GetMetaXmlBlock(sMyAppName As String, sVersion As String,  myUUIDv4 As 
     Dim indx As Integer
 	Dim J As Integer
 	
-    xml=&quot; &lt;metadata xmlns:dc=&quot;&quot;http://purl.org/dc/elements/1.1/&quot;&quot; xmlns:opf=&quot;&quot;http://www.idpf.org/2007/opf&quot;&quot;&gt;&quot; &amp; CR
-    xml= xml &amp;  &quot;  &lt;dc:identifier id=&quot;&quot;BookID&quot;&quot; opf:scheme=&quot;&quot;UUID&quot;&quot;&gt;&quot; &amp; myUUIDv4 &amp; &quot;&lt;/dc:identifier&gt;&quot; &amp; CR
-    xml= xml &amp;  &quot;  &lt;dc:contributor opf:role=&quot;&quot;bkp&quot;&quot;&gt;Created with &quot; &amp; sMyAppName &amp; &quot; &quot; &amp; sVersion &amp; &quot; by &quot; &amp; ThisIsMe &amp; CR &amp; MyWebSite &amp;&quot;&lt;/dc:contributor&gt;&quot; &amp; CR
-    xml= xml &amp;  &quot;  &lt;dc:date opf:event=&quot;&quot;creation&quot;&quot;&gt;&quot; &amp; Year(Now) &amp; &quot;-&quot; &amp; Format(Month(Now), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(Now), &quot;00&quot;) &amp; &quot;&lt;/dc:date&gt;&quot; &amp; CR
+    xml=&quot;    &lt;metadata xmlns:dc=&quot;&quot;http://purl.org/dc/elements/1.1/&quot;&quot; xmlns:opf=&quot;&quot;http://www.idpf.org/2007/opf&quot;&quot;&gt;&quot; &amp; CR
+    xml= xml &amp;  &quot;        &lt;dc:identifier id=&quot;&quot;BookID&quot;&quot; opf:scheme=&quot;&quot;UUID&quot;&quot;&gt;&quot; &amp; myUUIDv4 &amp; &quot;&lt;/dc:identifier&gt;&quot; &amp; CR
+    xml= xml &amp;  &quot;        &lt;dc:contributor opf:role=&quot;&quot;bkp&quot;&quot;&gt;Created with &quot; &amp; sMyAppName &amp; &quot; &quot; &amp; sVersion &amp; &quot; by &quot; &amp; ThisIsMe &amp; CR &amp; MyWebSite &amp;&quot;&lt;/dc:contributor&gt;&quot; &amp; CR
+    xml= xml &amp;  &quot;        &lt;dc:date opf:event=&quot;&quot;creation&quot;&quot;&gt;&quot; &amp; Year(Now) &amp; &quot;-&quot; &amp; Format(Month(Now), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(Now), &quot;00&quot;) &amp; &quot;&lt;/dc:date&gt;&quot; &amp; CR
 
     UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
     PV = UDP.getPropertyValues() 
@@ -497,9 +497,9 @@ Function GetMetaXmlBlock(sMyAppName As String, sVersion As String,  myUUIDv4 As 
                  End If
          End If    
     Next 
-    xml= xml &amp;  &quot;  &lt;meta name=&quot;&quot;&quot; &amp; sMyAppName &amp; &quot;&quot;&quot; content=&quot;&quot;&quot; &amp; sVersion &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR 
-    xml= xml &amp;  &quot;  &lt;meta name=&quot;&quot;cover&quot;&quot; content=&quot;&quot;cover.jpg&quot;&quot;/&gt;&quot; &amp; CR 
-    xml= xml &amp;  &quot; &lt;/metadata&gt;&quot; &amp; CR
+    xml= xml &amp;  &quot;        &lt;meta name=&quot;&quot;&quot; &amp; sMyAppName &amp; &quot;&quot;&quot; content=&quot;&quot;&quot; &amp; sVersion &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR 
+    xml= xml &amp;  &quot;        &lt;meta name=&quot;&quot;cover&quot;&quot; content=&quot;&quot;cover.jpg&quot;&quot;/&gt;&quot; &amp; CR 
+    xml= xml &amp;  &quot;    &lt;/metadata&gt;&quot; &amp; CR
 
     GetMetaXmlBlock=xml
 End Function
@@ -531,23 +531,23 @@ Function GetXmlFilledTag(MetaPropKey As String, MetaPropValue As String)
 	target=Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix)))
     Select Case target
     Case &quot;Title&quot;
-        xmls=&quot;  &lt;dc:title&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:title&gt;&quot; &amp; CR
+        xmls=&quot;        &lt;dc:title&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:title&gt;&quot; &amp; CR
     Case &quot;Publisher&quot;
-        xmls=&quot;  &lt;dc:publisher&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:publisher&gt;&quot; &amp; CR
+        xmls=&quot;        &lt;dc:publisher&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:publisher&gt;&quot; &amp; CR
     Case &quot;Author&quot;
-        xmls=&quot;  &lt;dc:creator opf:role=&quot;&quot;aut&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:creator&gt;&quot; &amp; CR
+        xmls=&quot;        &lt;dc:creator opf:role=&quot;&quot;aut&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:creator&gt;&quot; &amp; CR
     Case &quot;ISBN&quot;
-        xmls=&quot;  &lt;dc:identifier opf:scheme=&quot;&quot;ISBN&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:identifier&gt;&quot; &amp; CR
+        xmls=&quot;        &lt;dc:identifier opf:scheme=&quot;&quot;ISBN&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:identifier&gt;&quot; &amp; CR
     Case &quot;Description&quot;
-        xmls=&quot;  &lt;dc:description&gt;&lt;![CDATA[&quot; &amp; Slip(MetaPropValue, chr(10), &quot;&lt;br/&gt;&quot;) &amp; &quot;]]&gt;&lt;/dc:description&gt;&quot; &amp; CR
+        xmls=&quot;        &lt;dc:description&gt;&lt;![CDATA[&quot; &amp; Slip(MetaPropValue, chr(10), &quot;&lt;br/&gt;&quot;) &amp; &quot;]]&gt;&lt;/dc:description&gt;&quot; &amp; CR
     Case &quot;Language&quot; 
-        xmls=&quot;  &lt;dc:language&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:language&gt;&quot; &amp; CR    
+        xmls=&quot;        &lt;dc:language&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:language&gt;&quot; &amp; CR    
     Case &quot;OriginalTitle&quot; 
-        xmls=&quot;  &lt;dc:source&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:source&gt;&quot; &amp; CR            
+        xmls=&quot;        &lt;dc:source&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:source&gt;&quot; &amp; CR            
     Case &quot;PublishingDate&quot;
-        xmls=&quot;  &lt;dc:date opf:event=&quot;&quot;publication&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:date&gt;&quot; &amp; CR
+        xmls=&quot;        &lt;dc:date opf:event=&quot;&quot;publication&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:date&gt;&quot; &amp; CR
     Case &quot;Tags&quot;
-        xmls=&quot;  &lt;dc:subject&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:subject&gt;&quot; &amp; CR
+        xmls=&quot;        &lt;dc:subject&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:subject&gt;&quot; &amp; CR
     End Select
     GetXmlFilledTag=xmls
 End Function

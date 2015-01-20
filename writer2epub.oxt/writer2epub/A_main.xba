@@ -139,15 +139,7 @@
 &apos;			Image now are fully compatible with iBooks
 &apos;	1.1.28	Solved a bug in personalized styles
 &apos;			Improved extension compatibility
-&apos;	1.1.28a	by mj10777:
-&apos;			removed  OEBPS directory
-&apos;			html and css formatting, indention 1
-&apos;			added fonts directory, with css entry [fonts not copied]
-&apos;			css file renamed to style_epub.css
-&apos;   image directory renamed to images
-&apos;   added title in content header
 &apos;			
-&apos;
 &apos;			
 &apos;
 &apos;______________________________________________________________________________
@@ -429,9 +421,9 @@ End Sub
 Sub CreateFolderStructure (MyEpub As string)
 	myLog = myLog &amp; CR &amp; &quot;✔ Start CreateFolderStructure&quot;
 	MkDir (MyEpubFolder &amp; &quot;/META-INF&quot;)
-	MkDir (MyEpubFolder &amp; &quot;/text&quot;)
-	MkDir (MyEpubFolder &amp; &quot;/fonts&quot;)
-	myLog = myLog &amp; CR &amp; &quot;;✔ End&quot;
+	MkDir (MyEpubFolder &amp; &quot;/OEBPS/text&quot;)
+&apos;	MkDir (MyEpubFolder &amp; &quot;/OEBPS/fonts&quot;)
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
 End Sub
 
 
@@ -472,9 +464,9 @@ Sub CreateContainerFile (MyEpub As string)
 	Open MyEpubFolder + &quot;/META-INF/container.xml&quot; For Output As #1
 	Print #1, &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot;?&gt;&quot;
 	Print #1, &quot;&lt;container version=&quot;&quot;1.0&quot;&quot; xmlns=&quot;&quot;urn:oasis:names:tc:opendocument:xmlns:container&quot;&quot;&gt;&quot;
-	Print #1, &quot; &lt;rootfiles&gt;&quot;
-	Print #1, &quot;  &lt;rootfile full-path=&quot;&quot;content.opf&quot;&quot; media-type=&quot;&quot;application/oebps-package+xml&quot;&quot;/&gt;&quot;
-	Print #1, &quot; &lt;/rootfiles&gt;&quot;
+	Print #1, &quot;    &lt;rootfiles&gt;&quot;
+	Print #1, &quot;        &lt;rootfile full-path=&quot;&quot;OEBPS/content.opf&quot;&quot; media-type=&quot;&quot;application/oebps-package+xml&quot;&quot;/&gt;&quot;
+	Print #1, &quot;   &lt;/rootfiles&gt;&quot;
 	Print #1, &quot;&lt;/container&gt;&quot;
 	Close #1
 	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
@@ -533,7 +525,6 @@ Sub CreateTocFile (MyEpub As string)
 &apos;TOC entry list: 1:text 2:level 3:split#
 
 	Dim NextFile As String
-	Dim s_space As String
 	Dim i, j, k, CurLev As Integer
 	Dim myTab, longTab As String
 	Dim bLevelFound As Boolean
@@ -547,54 +538,47 @@ Sub CreateTocFile (MyEpub As string)
 	Dim vOutputData   As Variant
 	oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 	oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-	vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/toc.ncx&quot; )
+	vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/OEBPS/toc.ncx&quot; )
 	oOutputStream.setOutputStream(vOutputData)
 	oOutputStream.setEncoding(&quot;UTF-8&quot;)
 	oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot;?&gt;&quot; &amp; CR )
 	oOutputStream.writeString( &quot;&lt;!DOCTYPE ncx PUBLIC &quot;&quot;-//NISO//DTD ncx 2005-1//EN&quot;&quot;&quot; &amp; CR )
 	oOutputStream.writeString( &quot;    &quot;&quot;http://www.daisy.org/z3986/2005/ncx-2005-1.dtd&quot;&quot;&gt;&quot; &amp; CR )
-&apos;	oOutputStream.writeString( &quot;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;&quot; &amp; CR )
 	oOutputStream.writeString( &quot;&lt;ncx xmlns=&quot;&quot;http://www.daisy.org/z3986/2005/ncx/&quot;&quot; version=&quot;&quot;2005-1&quot;&quot;&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:uid&quot;&quot; content=&quot;&quot;&quot; &amp; MyUUIDv4 &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:depth&quot;&quot; content=&quot;&quot;&quot; &amp; iTocLevel &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
-	i=iSplitNumber
-	If getPrefValue (&quot;AddIndex&quot;) = 1 Then
-	 i=i+1
-	End If
-	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:totalPageCount&quot;&quot; content=&quot;&quot;&quot; &amp; iSplitNumber &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:maxPageNumber&quot;&quot; content=&quot;&quot;&quot; &amp; i &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot; &lt;docTitle&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot;  &lt;text&gt;&quot; &amp; MetaTitle &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot; &lt;/docTitle&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot; &lt;navMap&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;head&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;        &lt;meta name=&quot;&quot;dtb:uid&quot;&quot; content=&quot;&quot;&quot; &amp; MyUUIDv4 &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;        &lt;meta name=&quot;&quot;dtb:depth&quot;&quot; content=&quot;&quot;&quot; &amp; iTocLevel &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;        &lt;meta name=&quot;&quot;dtb:totalPageCount&quot;&quot; content=&quot;&quot;0&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;        &lt;meta name=&quot;&quot;dtb:maxPageNumber&quot;&quot; content=&quot;&quot;0&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;/head&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;docTitle&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;        &lt;text&gt;&quot; &amp; MetaTitle &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;/docTitle&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;navMap&gt;&quot; &amp; CR )
 	i = 1
- 
+
 	Do While sTOC(i, 3) &lt;&gt; &quot;&quot;
 		If sTOC(i, 1) = &quot;&quot; Then sTOC(i, 1) =&quot;*&quot; &apos;The chapter name can be empty...
 		If i &lt;&gt; 1 Then
-			If  sTOC(i, 2) &lt;  sTOC(i-1, 2) or sTOC(i, 2) =  sTOC(i-1, 2) Then    
-				FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, sTOC(i, 2),sTOC(i-1, 2))
+			If  sTOC(i, 2) &lt;  sTOC(i-1, 2) or sTOC(i, 2) =  sTOC(i-1, 2) Then
+				FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, sTOC(i, 2))
 			End If
 		End If
-		
-		s_space = SPACE( sTOC(i, 2) )
 
-		oOutputStream.writeString( s_space &amp; &quot; &lt;navPoint id=&quot;&quot;navPoint-&quot; &amp; i &amp; &quot;&quot;&quot; playOrder=&quot;&quot;&quot; &amp; i &amp; &quot;&quot;&quot;&gt;&quot; &amp; CR )
-		oOutputStream.writeString( s_space &amp; &quot;  &lt;navLabel&gt;&quot; &amp; CR ) 
-		oOutputStream.writeString( s_space &amp; &quot;   &lt;text&gt;&quot; &amp; sTOC(i, 1)  &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
-		&apos;oOutputStream.writeString( s_space &amp; &quot;   &lt;text&gt;&quot; &amp; sTOC(i, 1) &amp; &quot; - &quot;  &amp; sTOC(i-1, 2) &amp; &quot; - &quot;  &amp; sTOC(i, 2) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
-		oOutputStream.writeString( s_space &amp; &quot;  &lt;/navLabel&gt;&quot; &amp; CR )
-		oOutputStream.writeString( s_space &amp; &quot;  &lt;content src=&quot;&quot;text/&quot; &amp; sTOC(i, 3) &amp; &quot;#heading_id_&quot; &amp; i &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;      &lt;navPoint id=&quot;&quot;navPoint-&quot; &amp; i &amp; &quot;&quot;&quot; playOrder=&quot;&quot;&quot; &amp; i &amp; &quot;&quot;&quot;&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;        &lt;navLabel&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;          &lt;text&gt;&quot; &amp; sTOC(i, 1) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;        &lt;/navLabel&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;        &lt;content src=&quot;&quot;text/&quot; &amp; sTOC(i, 3)&amp; &quot;#heading_id_&quot; &amp; i &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
 
 		NPtArray( sTOC(i, 2))=NPtArray( sTOC(i, 2))+1
 		i = i + 1
 	Loop
 
-	FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, 1, 2)
+	FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, 1)
 		
-	oOutputStream.writeString( &quot; &lt;/navMap&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;/navMap&gt;&quot; &amp; CR )
 	oOutputStream.writeString( &quot;&lt;/ncx&gt;&quot; &amp; CR )
 	oOutputStream.flush()
 	oOutputStream.closeOutput()
@@ -629,26 +613,26 @@ Sub CreateHtmlTocFile(MyEpub As string)
 		Dim vOutputData   As Variant
 		oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 		oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-		vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/text/toc.xhtml&quot; )
+		vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/OEBPS/text/toc.xhtml&quot; )
 		oOutputStream.setOutputStream(vOutputData)
 		oOutputStream.setEncoding(&quot;UTF-8&quot;)
 		oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot;  &amp; CR )
 		oOutputStream.writeString( &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR )
 		oOutputStream.writeString( &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR )
 		oOutputStream.writeString( &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot; &amp; CR )
-		oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
-		oOutputStream.writeString( &quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR )
-		oOutputStream.writeString( &quot;  &lt;title&gt;Table of contents&lt;/title&gt;&quot; &amp; CR )
-		oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
-		oOutputStream.writeString( &quot; &lt;body&gt;&quot; &amp; CR )
-		oOutputStream.writeString( &quot;  &lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount + 1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; getPrefValue (&quot;IndexTitle&quot;) &amp; &quot;&lt;/h1&gt;&quot; &amp; CR )
-		oOutputStream.writeString( &quot;  &lt;div&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;head&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style001.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;title&gt;Table of contents&lt;/title&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;/head&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;body&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount + 1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; getPrefValue (&quot;IndexTitle&quot;) &amp; &quot;&lt;/h1&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;div&gt;&quot; &amp; CR )
 
 		i = 1
 	
 		Do While sTOC(i, 3) &lt;&gt; &quot;&quot;			
 			If sTOC(i, 1) = &quot;&quot; Then sTOC(i, 1) =&quot;*&quot; 	
-			oOutputStream.writeString( &quot;   &lt;p class=&quot;&quot;index&quot; &amp; sTOC(i,2) &amp; &quot;&quot;&quot;&gt;&lt;a href=&quot;&quot;&quot; &amp; sTOC(i, 3) &amp; &quot;#heading_id_&quot; &amp; i &amp; &quot;&quot;&quot;&gt;&quot; &amp; sTOC(i, 1) &amp; &quot;&lt;/a&gt;&lt;/p&gt;&lt;br/&gt;&quot; &amp; CR )	
+			oOutputStream.writeString( &quot;        &lt;p class=&quot;&quot;index&quot; &amp; sTOC(i,2) &amp; &quot;&quot;&quot;&gt;&lt;a href=&quot;&quot;&quot; &amp; sTOC(i, 3) &amp; &quot;#heading_id_&quot; &amp; i &amp; &quot;&quot;&quot;&gt;&quot; &amp; sTOC(i, 1) &amp; &quot;&lt;/a&gt;&lt;/p&gt;&lt;br/&gt;&quot; &amp; CR )	
 			NPtArray( sTOC(i, 2))=NPtArray( sTOC(i, 2))+1	
 			i = i + 1
 		Loop
@@ -656,10 +640,10 @@ Sub CreateHtmlTocFile(MyEpub As string)
 		sTOC(iTOCcount + 1, 1) = getPrefValue (&quot;IndexTitle&quot;) 
 		sTOC(iTOCcount + 1, 2) = 1
 		sTOC(iTOCcount + 1, 3) = &quot;toc.xhtml&quot;
-		&apos; FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, 1, 2)
-		oOutputStream.writeString( &quot;  &lt;/div&gt;&quot; &amp; CR )
-	 oOutputStream.writeString( &quot; &lt;/body&gt;&quot; &amp; CR )
-	 oOutputStream.writeString( &quot;&lt;/html&gt;&quot; &amp; CR )
+		&apos; FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, 1)
+			oOutputStream.writeString( &quot;&lt;/div&gt;&quot; &amp; CR )
+	        oOutputStream.writeString( &quot;&lt;/body&gt;&quot; &amp; CR )
+	        oOutputStream.writeString( &quot;&lt;/html&gt;&quot; &amp; CR )
 		
 		oOutputStream.flush()
 		oOutputStream.closeOutput()
@@ -692,17 +676,17 @@ Sub CreateContentOpfFile (MyEpub As string)
 	Dim vOutputData   As Variant
 	oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 	oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-	vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/content.opf&quot; )
+	vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/OEBPS/content.opf&quot; )
 	oOutputStream.setOutputStream(vOutputData)
 	oOutputStream.setEncoding(&quot;UTF-8&quot;)
 	oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;UTF-8&quot;&quot;?&gt;&quot; &amp; CR )
 	oOutputStream.writeString( &quot;&lt;package xmlns=&quot;&quot;http://www.idpf.org/2007/opf&quot;&quot; unique-identifier=&quot;&quot;BookID&quot;&quot; version=&quot;&quot;2.0&quot;&quot;&gt;&quot; &amp; CR )
 	oOutputStream.writeString(GetMetaXmlBlock(sMyAppName, sVersion,  myUUIDv4 ))
-	oOutputStream.writeString( &quot;  &lt;manifest&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot;   &lt;item id=&quot;&quot;ncx&quot;&quot; href=&quot;&quot;toc.ncx&quot;&quot; media-type=&quot;&quot;application/x-dtbncx+xml&quot;&quot;/&gt;&quot; &amp; CR )
-	If FileExists(MyEpubFolder &amp; &quot;/images/&quot;) Then
+	oOutputStream.writeString( &quot;    &lt;manifest&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;        &lt;item id=&quot;&quot;ncx&quot;&quot; href=&quot;&quot;toc.ncx&quot;&quot; media-type=&quot;&quot;application/x-dtbncx+xml&quot;&quot;/&gt;&quot; &amp; CR )
+	If FileExists(MyEpubFolder &amp; &quot;/OEBPS/images/&quot;) Then
 		MaxFiles = 1
-		NextFile = Dir(MyEpubFolder &amp; &quot;/images/&quot;)
+		NextFile = Dir(MyEpubFolder &amp; &quot;/OEBPS/images/&quot;)
 		While NextFile &lt;&gt; &quot;&quot;
 			DirMatrix(MaxFiles) =  NextFile
 			NextFile = Dir
@@ -737,13 +721,13 @@ Sub CreateContentOpfFile (MyEpub As string)
 	    Case else
 	      MsgBox &quot;image file &quot; &amp; DirMatrix(i) &amp; &quot; NOT SUPPORT BY EPUB!&quot; &amp; CR &amp; &quot;Only .jpeg, .png, .gif and .svg allowed&quot;
 	  End Select
-	  oOutputStream.writeString( &quot;  &lt;item id=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; href=&quot;&quot;images/&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; media-type=&quot;&quot;image/&quot; &amp; FileType &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	  oOutputStream.writeString( &quot;        &lt;item id=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; href=&quot;&quot;images/&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; media-type=&quot;&quot;image/&quot; &amp; FileType &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
 	Next i
-	oOutputStream.writeString( &quot;  &lt;item id=&quot;&quot;style_epub.css&quot;&quot; href=&quot;&quot;styles/style_epub.css&quot;&quot; media-type=&quot;&quot;text/css&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;        &lt;item id=&quot;&quot;style001.css&quot;&quot; href=&quot;&quot;styles/style001.css&quot;&quot; media-type=&quot;&quot;text/css&quot;&quot;/&gt;&quot; &amp; CR )
 	Redim DirMatrix(10000)
-	If FileExists(MyEpubFolder &amp; &quot;/text/&quot;) Then
+	If FileExists(MyEpubFolder &amp; &quot;/OEBPS/text/&quot;) Then
 	  MaxFiles = 1
-	  NextFile = Dir(MyEpubFolder &amp; &quot;/text/&quot;)
+	  NextFile = Dir(MyEpubFolder &amp; &quot;/OEBPS/text/&quot;)
 	  While NextFile &lt;&gt; &quot;&quot;
 	    DirMatrix(MaxFiles) = NextFile
 	    NextFile = Dir
@@ -765,14 +749,14 @@ Sub CreateContentOpfFile (MyEpub As string)
 	End If
 	For i = 2 To MaxFiles
 	  &apos;---- If right(DirMatrix(i), 5) = &quot;xhtml&quot; Then
-	  oOutputStream.writeString( &quot;  &lt;item id=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; href=&quot;&quot;text/&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; media-type=&quot;&quot;application/xhtml+xml&quot;&quot;/&gt;&quot; &amp; CR )
+	  oOutputStream.writeString( &quot;        &lt;item id=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; href=&quot;&quot;text/&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; media-type=&quot;&quot;application/xhtml+xml&quot;&quot;/&gt;&quot; &amp; CR )
 	  &apos;---- End If
 	Next i
-	oOutputStream.writeString( &quot; &lt;/manifest&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot; &lt;spine toc=&quot;&quot;ncx&quot;&quot;&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;/manifest&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;spine toc=&quot;&quot;ncx&quot;&quot;&gt;&quot; &amp; CR )
 	If CoverType &lt;&gt; &quot;None&quot; Then  &apos;If there is an image in the first page, this will be the cover
 &apos;	if isCoverPresent then
-	  oOutputStream.writeString( &quot;  &lt;itemref idref=&quot;&quot;coverpage.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
+	  oOutputStream.writeString( &quot;        &lt;itemref idref=&quot;&quot;coverpage.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
 	end if
 	For i = 2 To MaxFiles
 	  &apos;---- If right(DirMatrix(i), 5) = &quot;xhtml&quot; Then
@@ -781,24 +765,24 @@ Sub CreateContentOpfFile (MyEpub As string)
 &apos;	  End If
 	  If Left (DirMatrix(i), 9) &lt;&gt; &quot;coverpage&quot; Then
 	  	  If Left (DirMatrix(i), 8) = &quot;footnote&quot; Then
-	  	  	oOutputStream.writeString( &quot;  &lt;itemref idref=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; linear=&quot;&quot;no&quot;&quot;/&gt;&quot; &amp; CR )
+	  	  	oOutputStream.writeString( &quot;        &lt;itemref idref=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; linear=&quot;&quot;no&quot;&quot;/&gt;&quot; &amp; CR )
 	  	  Else
-	  		oOutputStream.writeString( &quot;  &lt;itemref idref=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	  		oOutputStream.writeString( &quot;        &lt;itemref idref=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
 	  	  End If
 	  End If
 	Next i
-	oOutputStream.writeString( &quot; &lt;/spine&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot; &lt;guide&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;/spine&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;guide&gt;&quot; &amp; CR )
 	if isCoverPresent then
-		oOutputStream.writeString( &quot;  &lt;reference type=&quot;&quot;cover&quot;&quot; title=&quot;&quot;Cover&quot;&quot; href=&quot;&quot;text/coverpage.xhtml&quot;&quot; /&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;       &lt;reference type=&quot;&quot;cover&quot;&quot; title=&quot;&quot;Cover&quot;&quot; href=&quot;&quot;text/coverpage.xhtml&quot;&quot; /&gt;&quot; &amp; CR )
 	else
-		oOutputStream.writeString( &quot;  &lt;reference type=&quot;&quot;cover&quot;&quot; title=&quot;&quot;Cover Page&quot;&quot; href=&quot;&quot;text/content0001.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;       &lt;reference type=&quot;&quot;cover&quot;&quot; title=&quot;&quot;Cover Page&quot;&quot; href=&quot;&quot;text/content0001.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
 	end if
 	
 	If getPrefValue (&quot;AddIndex&quot;) = 1 Then &apos; == Nick: Adds html table of content 
-    	oOutputStream.writeString( &quot;  &lt;reference type=&quot;&quot;toc&quot;&quot; title=&quot;&quot;Table of contents&quot;&quot; href=&quot;&quot;text/toc.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
+    	oOutputStream.writeString( &quot;       &lt;reference type=&quot;&quot;toc&quot;&quot; title=&quot;&quot;Table of contents&quot;&quot; href=&quot;&quot;text/toc.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
 	End If
-	oOutputStream.writeString( &quot; &lt;/guide&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &lt;/guide&gt;&quot; &amp; CR )
 	oOutputStream.writeString( &quot;&lt;/package&gt;&quot; &amp; CR )
 	oOutputStream.flush()
 	oOutputStream.closeOutput()
@@ -842,40 +826,40 @@ Sub CreateiTunesMetadata (MyEpub As string)
 	oOutputStream.writeString( &quot;&lt;dict&gt;&quot; &amp; CR)
 	For I = 0 to uBound(PV) 
 		If PV(i).Name=&quot;w2e_MetaAuthor&quot; and (not IsEmpty(PV(i).Value)) Then
-			oOutputStream.writeString( &quot; &lt;key&gt;artistName&lt;/key&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot; &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaAuthor&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;key&gt;artistName&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaAuthor&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
 		End If
 	Next
-	oOutputStream.writeString( &quot; &lt;key&gt;book-info&lt;/key&gt;&quot; &amp; CR)
-	oOutputStream.writeString( &quot; &lt;dict&gt;&quot; &amp; CR)
-	oOutputStream.writeString( &quot;  &lt;key&gt;cover-image-path&lt;/key&gt;&quot; &amp; CR)
-	oOutputStream.writeString( &quot;  &lt;string&gt;OEBPS/Images/cover.jpg&lt;/string&gt;&quot;  &amp; CR)
-	oOutputStream.writeString( &quot;  &lt;key&gt;publisher-unique-id&lt;/key&gt;&quot; &amp; CR)
-	oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UUIDv4 &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
-	oOutputStream.writeString( &quot; &lt;/dict&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;    &lt;key&gt;book-info&lt;/key&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;    &lt;dict&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;        &lt;key&gt;cover-image-path&lt;/key&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;        &lt;string&gt;OEBPS/Images/cover.jpg&lt;/string&gt;&quot;  &amp; CR)
+	oOutputStream.writeString( &quot;        &lt;key&gt;publisher-unique-id&lt;/key&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;        &lt;string&gt;&quot; &amp; UUIDv4 &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;    &lt;/dict&gt;&quot; &amp; CR)
 	For I = 0 to uBound(PV) 
 		If PV(i).Name=&quot;w2e_MetaTitle&quot; and (not IsEmpty(PV(i).Value)) Then
-			oOutputStream.writeString( &quot;  &lt;key&gt;itemName&lt;/key&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; PV(i).Value &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot;  &lt;key&gt;playlistName&lt;/key&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaTitle&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;key&gt;itemName&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;string&gt;&quot; &amp; PV(i).Value &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;key&gt;playlistName&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaTitle&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
 		EndIf
 	Next
 	For I = 0 to uBound(PV) 
 		If PV(i).Name=&quot;w2e_MetaDescription&quot; and (not IsEmpty(PV(i).Value)) Then
-			oOutputStream.writeString( &quot;  &lt;key&gt;comments&lt;/key&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaDescription&quot;) &amp;  &quot;&lt;/string&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;key&gt;comments&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaDescription&quot;) &amp;  &quot;&lt;/string&gt;&quot; &amp; CR)
 		End If
 	Next
 	For I = 0 to uBound(PV) 
 		If PV(i).Name=&quot;w2e_MetaPublishingDate&quot; and (not IsEmpty(PV(i).Value)) Then
-			oOutputStream.writeString( &quot;  &lt;key&gt;releaseDate&lt;/key&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaPublishingDate&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot;  &lt;key&gt;year&lt;/key&gt;&quot; &amp; CR)
-			oOutputStream.writeString( &quot;  &lt;integer&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaPublishingDate&quot;) &amp; &quot;&lt;/integer&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;key&gt;releaseDate&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaPublishingDate&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;key&gt;year&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;    &lt;integer&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaPublishingDate&quot;) &amp; &quot;&lt;/integer&gt;&quot; &amp; CR)
 		End If
 	Next
-	oOutputStream.writeString( &quot; &lt;/dict&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;&lt;/dict&gt;&quot; &amp; CR)
 	oOutputStream.writeString( &quot;&lt;/plist&gt;&quot; &amp; CR)
 	oOutputStream.flush()
 	oOutputStream.closeOutput()
@@ -901,13 +885,12 @@ End sub
 
 &apos;_______________________________________________________________________________________________________________________________
 
-Sub FlushClosingTocNavPointTagBuffer (oOutputStream As object, CountArray As Integer, EntryIndex As Integer, LayerIndex As Integer)
-	Dim I,J As Integer 
- J=LayerIndex
+Sub FlushClosingTocNavPointTagBuffer (oOutputStream As object, CountArray As Integer, EntryIndex As Integer)
+
+	Dim I,J As Integer
 	For I = EntryIndex To 10
 		If CountArray(I) &lt;&gt; 0  Then &apos;maximun one tag for headingN should be open
-			oOutputStream.writeString( Space(J) &amp; &quot; &lt;/navPoint&gt;&quot; &amp; CR )
-			J=J-1
+			oOutputStream.writeString( &quot;      &lt;/navPoint&gt;&quot; &amp; CR )
 			CountArray(I)=0
 		End If
 	Next I

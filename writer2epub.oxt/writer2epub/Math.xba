@@ -26,7 +26,7 @@ Function MathHandler (myFormula As Object)
 	oShape.Linecolor = RGB (255,255,255)	
 	iWidth = myFormula.Size.Width\10
 	iHeight = myFormula.Size.Height\10
-	sFileUrl = MyEpubFolder &amp; &quot;/images/&quot; &amp; FormulaName
+	sFileUrl = MyEpubFolder &amp; &quot;/OEBPS/images/&quot; &amp; FormulaName
 	ExportShapeToPNG (oShape, sFileUrl, iWidth, iHeight)
 	oDrawDoc.close(true)
 	sRelH =  Str(myFormula.height / 300)

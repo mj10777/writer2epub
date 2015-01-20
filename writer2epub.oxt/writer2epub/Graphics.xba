@@ -75,7 +75,7 @@ Sub ExtractWriterGraphics (MyEpub As String)
 &apos;	oUrl = createUnoService(&quot;com.sun.star.util.URL&quot;)
 	oUrl.Complete = oDocument.URL
 	oTransformer.parsestrict(oUrl) 
-	sDestfolder = MyEpubFolder &amp; &quot;/images/&quot;
+	sDestfolder = MyEpubFolder &amp; &quot;/OEBPS/images/&quot;
 
 	&apos; open zip file and get content of &quot;Pictures&quot; folder ...
  	oZipArchive = createUnoService(&quot;com.sun.star.packages.Package&quot;)
@@ -97,17 +97,17 @@ Sub ExtractWriterGraphics (MyEpub As String)
 		If getPrefValue(&quot;RetainOriginalImages&quot;) = &quot;0&quot;  Then	
 			oDrawDoc = StarDesktop.LoadComponentFromUrl(sFileUrlO,&quot;_blank&quot;, 0, mDrawArgs())
 			oShape = oDrawDoc.Drawpages(0).getByIndex(0)		&apos;first shape on first page
-			sFileUrl = MyEpubFolder &amp; &quot;/images/cover.jpg&quot;
+			sFileUrl = MyEpubFolder &amp; &quot;/OEBPS/images/cover.jpg&quot;
 			ExportShapeToJPG(oShape,sFileUrl)
 			oDrawDoc.close(true)
 			CreateCoverPage(MyEpub, &quot;cover.jpg&quot;)
 		Else
-			sFileUrl = MyEpubFolder &amp; &quot;/images/cover.&quot; &amp; GetFileNameExtension(sFileUrlO)
+			sFileUrl = MyEpubFolder &amp; &quot;/OEBPS/images/cover.&quot; &amp; GetFileNameExtension(sFileUrlO)
 			sGraphicName = sFileUrlO
 			Do While InStr(1,sGraphicName,&quot;/&quot;)
 				sGraphicName = Mid(sGraphicName,InStr(1,sGraphicName,&quot;/&quot;)+1,Len(sGraphicName)
 			Loop
-			MkDir (MyEpubFolder &amp; &quot;/images/&quot;)
+			MkDir (MyEpubFolder &amp; &quot;/OEBPS/images/&quot;)
 			Filecopy sFileUrlO, sFileUrl
 			CreateCoverPage(MyEpub, &quot;cover.&quot; &amp; GetFileNameExtension(sFileUrlO))
 		End If
@@ -136,12 +136,12 @@ Sub ExtractWriterGraphics (MyEpub As String)
 				sGraphicName =  CleanPictureName(Left(sGraphicName, Len(sGraphicName)-4) &amp; sSuffix &amp; Right(sGraphicName,4))
 				oDrawDoc = StarDesktop.LoadComponentFromUrl(sFileUrlO,&quot;_blank&quot;, 0, mDrawArgs())
 				oShape = oDrawDoc.Drawpages(0).getByIndex(0)		&apos;first shape on first page
-				sFileUrl = MyEpubFolder &amp; &quot;/images/&quot; &amp; sGraphicName
+				sFileUrl = MyEpubFolder &amp; &quot;/OEBPS/images/&quot; &amp; sGraphicName
 				ExportShapeToJPG(oShape,sFileUrl)
 				oDrawDoc.close(true)
 			Else												&apos;retain original images
 				sGraphicName =  CleanPictureName(sGraphicName)
-				sFileUrl = MyEpubFolder &amp; &quot;/images/&quot; &amp; sGraphicName
+				sFileUrl = MyEpubFolder &amp; &quot;/OEBPS/images/&quot; &amp; sGraphicName
 				Filecopy convertFromURL(sFileUrlO), convertFromURL(sFileUrl)
 			End If
 		Else
@@ -186,7 +186,7 @@ Sub ExtractWriterGraphics (MyEpub As String)
 &apos;======= export to .jpg (even if it is already .jpg) =================
 
 		If getPrefValue(&quot;RetainOriginalImages&quot;) = &quot;0&quot;  Then		&apos;Copy images without changes
-			sFileUrlO = MyEpubFolder &amp; &quot;/images/&quot; &amp; sGraphicName
+			sFileUrlO = MyEpubFolder &amp; &quot;/OEBPS/images/&quot; &amp; sGraphicName
 			oDrawDoc = StarDesktop.LoadComponentFromUrl(sFileUrlO,&quot;_blank&quot;, 0, mDrawArgs())
 			oShape = oDrawDoc.Drawpages(0).getByIndex(0)		&apos;first shape on first page
 			sFileUrl = GetFileNameWithoutExtension(sFileUrlO)
@@ -288,7 +288,7 @@ Sub ExtractWriterGraphics (MyEpub As String)
 
 &apos;			ElseIf oGraphics.getByIndex(i).TextWrap = 1 Then &apos;Transparent image
 &apos;				sGraphicAlign = &quot; class=&quot;&quot;transparent&quot;&quot; &quot;
-&apos;				myAnchor = &quot; &lt;div style=&quot;&quot;background-image:url(../images/&quot; &amp; sGraphicName &amp; &quot;&quot;&quot;&gt;&lt;/div&gt;&quot; &amp; CR
+&apos;				myAnchor = &quot;&lt;div style=&quot;&quot;background-image:url(../images/&quot; &amp; sGraphicName &amp; &quot;&quot;&quot;&gt;&lt;/div&gt;&quot; &amp; CR
 
 
 &apos;============== image inline ==============
@@ -315,7 +315,7 @@ Sub ExtractWriterGraphics (MyEpub As String)
 			
 &apos;============ now link picture to new external file ==============
 
-   oGraphics.getByIndex(i).getAnchor.string = &quot;  &quot; &amp; myAnchor
+			oGraphics.getByIndex(i).getAnchor.string = myAnchor
 
 		End If
 
@@ -326,11 +326,11 @@ Sub ExtractWriterGraphics (MyEpub As String)
 
 &apos;	MaxDim = val (myPrefs.getPropertyValue(&quot;MaxImageDim&quot;)) * 1024
 &apos;	sWrongList = &quot;&quot;
-&apos;	If FileExists(MyEpubFolder &amp; &quot;/images/&quot;) Then
-&apos;		NextFile = Dir(MyEpubFolder &amp; &quot;/images/&quot;)
+&apos;	If FileExists(MyEpubFolder &amp; &quot;/OEBPS/images/&quot;) Then
+&apos;		NextFile = Dir(MyEpubFolder &amp; &quot;/OEBPS/images/&quot;)
 &apos;		While NextFile &lt;&gt; &quot;&quot;
-&apos;			If FileLen(MyEpubFolder &amp; &quot;/images/&quot; &amp; NextFile) &gt;MaxDim Then
-&apos;				sWrongList = sWrongList &amp; CR &amp; NextFile &amp; &quot;: &quot; &amp; FileLen(MyEpubFolder &amp; &quot;/images/&quot; &amp; NextFile) &amp; &quot; Bytes&quot;
+&apos;			If FileLen(MyEpubFolder &amp; &quot;/OEBPS/images/&quot; &amp; NextFile) &gt;MaxDim Then
+&apos;				sWrongList = sWrongList &amp; CR &amp; NextFile &amp; &quot;: &quot; &amp; FileLen(MyEpubFolder &amp; &quot;/OEBPS/images/&quot; &amp; NextFile) &amp; &quot; Bytes&quot;
 &apos;			End If
 &apos;			NextFile = Dir
 &apos;		WEnd
@@ -503,28 +503,28 @@ Sub CreateCoverPage(MyEpub As String, sCoverFileName As String)
 
    	t_oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
    	t_oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-   	t_vOutputData   = t_oOutputAccess.openFileWrite(MyEpubFolder + &quot;/text/coverpage.xhtml&quot;)
+   	t_vOutputData   = t_oOutputAccess.openFileWrite(MyEpubFolder + &quot;/OEBPS/text/coverpage.xhtml&quot;)
    	t_oOutputStream.setOutputStream(t_vOutputData)
    	t_oOutputStream.setEncoding(&quot;UTF-8&quot;)
    	t_oOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xml:lang=&quot;&quot;en&quot;&quot;&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot; &lt;head&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;  &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=UTF-8&quot;&quot;/&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;  &lt;title&gt;Cover&lt;/title&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;  &lt;style type=&quot;&quot;text/css&quot;&quot; title=&quot;&quot;override_css&quot;&quot;&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;   @page {padding: 0pt; margin:0pt}&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;   body { text-align: center; padding:0pt; margin: 0pt; background-color : #&quot; &amp; sBackgroundColor &amp; &quot;;}&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;  &lt;/style&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot; &lt;/head&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot; &lt;body&gt;&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xml:lang=&quot;&quot;en&quot;&quot;&gt;&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;  &lt;head&gt;&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;    &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=UTF-8&quot;&quot;/&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;    &lt;title&gt;Cover&lt;/title&gt;&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;    &lt;style type=&quot;&quot;text/css&quot;&quot; title=&quot;&quot;override_css&quot;&quot;&gt;&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;      @page {padding: 0pt; margin:0pt}&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;      body { text-align: center; padding:0pt; margin: 0pt; background-color : #&quot; &amp; sBackgroundColor &amp; &quot;;}&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;    &lt;/style&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;/head&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;body&gt;&quot; &amp; CR)
 &apos;	t_oOutputStream.writeString(&quot;    &lt;svg xmlns=&quot;&quot;http://www.w3.org/2000/svg&quot;&quot; xmlns:xlink=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot; version=&quot;&quot;1.1&quot;&quot; width=&quot;&quot;100%&quot;&quot; height=&quot;&quot;100%&quot;&quot; viewBox=&quot;&quot;0 0 350 530&quot;&quot;&gt;&quot; &amp; CR)
 &apos;	t_oOutputStream.writeString(&quot;      &lt;image width=&quot;&quot;350&quot;&quot; height=&quot;&quot;530&quot;&quot; xlink:href=&quot;&quot;../images/&quot; &amp; sCoverFileName &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR)
 &apos;	t_oOutputStream.writeString(&quot;    &lt;/svg&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;  &lt;div&gt;&quot;)
-   	t_oOutputStream.writeString(&quot;   &lt;img id=&quot;&quot;cover&quot;&quot; height=&quot;&quot;100%&quot;&quot; alt=&quot;&quot;Cover&quot;&quot; src=&quot;&quot;../images/&quot; &amp; sCoverFileName &amp; &quot;&quot;&quot; /&gt;&quot; &amp; CR)
+	t_oOutputStream.writeString(&quot;    &lt;div&gt;&quot;)
+   	t_oOutputStream.writeString(&quot;    &lt;img id=&quot;&quot;cover&quot;&quot; height=&quot;&quot;100%&quot;&quot; alt=&quot;&quot;Cover&quot;&quot; src=&quot;&quot;../images/&quot; &amp; sCoverFileName &amp; &quot;&quot;&quot; /&gt;&quot; &amp; CR)
 &apos;	t_oOutputStream.writeString(&quot;    &lt;img class=&quot;&quot;cover&quot;&quot; alt=&quot;&quot;Cover&quot;&quot; src=&quot;&quot;../images/&quot; &amp; sCoverFileName &amp; &quot;&quot;&quot; /&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot;  &lt;/div&gt;&quot; &amp; CR)
-   	t_oOutputStream.writeString(&quot; &lt;/body&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;    &lt;/div&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;/body&gt;&quot; &amp; CR)
    	t_oOutputStream.writeString(&quot;&lt;/html&gt;&quot; &amp; CR)
    	t_oOutputStream.flush()
    	t_oOutputStream.closeOutput()
@@ -550,7 +550,7 @@ Sub ExportAllGraphics170dpi
 
 	&apos;--- config section ---
 	DPI      = 170
-    BasePath = MyEpubFolder &amp; &quot;/images2/&quot; &amp; &quot;/&quot;		&apos;My Documents folder. you can also use &quot;file:///c:/&quot;
+    BasePath = MyEpubFolder &amp; &quot;/OEBPS/images2/&quot; &amp; &quot;/&quot;		&apos;My Documents folder. you can also use &quot;file:///c:/&quot;
 	&apos;--- end of config section ---
 
 	xDoc = ThisComponent	&apos;REM A smart person would force this to be a Draw or Impress document

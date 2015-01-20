@@ -104,7 +104,7 @@ Sub ChangeWriting(MyEpub As String)
   Dim sParas   As String
   &apos;---- get contentxxxx.xhtml
   Dim NextFile            As String
-  NextFile = Dir(MyEpubFolder &amp; &quot;/text/&quot;, 0)
+  NextFile = Dir(MyEpubFolder &amp; &quot;/OEBPS/text/&quot;, 0)
   While NextFile &lt;&gt; &quot;&quot;
     If Right(NextFile, 5) = &quot;xhtml&quot; Then
       contentXhtmls(iContentNumber) = NextFile
@@ -120,7 +120,7 @@ Sub ChangeWriting(MyEpub As String)
     Dim vInputData    As Variant
     oInputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
     oInputStream = CreateUnoService(&quot;com.sun.star.io.TextInputStream&quot;)
-    vInputData  = oInputAccess.openFileRead(MyEpubFolder &amp; &quot;/text/&quot; &amp; contentXhtmls(iContentNumber))
+    vInputData  = oInputAccess.openFileRead(MyEpubFolder &amp; &quot;/OEBPS/text/&quot; &amp; contentXhtmls(iContentNumber))
     oInputStream.setInputStream(vInputData)
     oInputStream.setEncoding(&quot;UTF-8&quot;)
     Dim sLine    As String
@@ -163,33 +163,33 @@ Sub ChangeWriting(MyEpub As String)
     oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
     oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
     iSVGNumber = iSVGNumber + 1
-    vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/text/&quot; &amp; Format(iSVGNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot; )
+    vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/OEBPS/text/&quot; &amp; Format(iSVGNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot; )
     oOutputStream.setOutputStream(vOutputData)
     oOutputStream.setEncoding(&quot;UTF-8&quot;)
     oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR )
     oOutputStream.writeString( &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR )
     oOutputStream.writeString( &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR )
     oOutputStream.writeString( &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xmlns:xml=&quot;&quot;http://www.w3.org/XML/1998/namespace&quot;&quot; xml:lang=&quot;&quot;ja&quot;&quot;&gt;&quot; &amp; CR )
-    oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
-    oOutputStream.writeString( &quot;  &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot; /&gt;&quot; &amp; CR )
-    oOutputStream.writeString( &quot;  &lt;title&gt;&quot; &amp; MetaTitle &amp; &quot; (&quot; &amp; iSVGNumber &amp; &quot;)&lt;/title&gt;&quot; &amp; CR )
-    oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
-    oOutputStream.writeString( &quot; &lt;body&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;&lt;head&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;&lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot; /&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;&lt;title&gt;&quot; &amp; MetaTitle &amp; &quot; (&quot; &amp; iSVGNumber &amp; &quot;)&lt;/title&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;&lt;/head&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;&lt;body&gt;&quot; &amp; CR )
     oBar.start(createSvgMSG, Len(sParas))  &apos;++++++++++
     Do While pos &lt;= Len(sParas)
       oBar.setValue(pos)  &apos;++++++++++
-      oOutputStream.writeString( &quot;  &lt;svg version=&quot;&quot;1.1&quot;&quot; xmlns=&quot;&quot;http://www.w3.org/2000/svg&quot;&quot; xmlns:xlink=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot; width=&quot;&quot;&quot; &amp; Format(PageWidth, kFRAC) &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Format(PageHeight, kFRAC) &amp; &quot;px&quot;&quot;&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot;&lt;svg version=&quot;&quot;1.1&quot;&quot; xmlns=&quot;&quot;http://www.w3.org/2000/svg&quot;&quot; xmlns:xlink=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot; width=&quot;&quot;&quot; &amp; Format(PageWidth, kFRAC) &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Format(PageHeight, kFRAC) &amp; &quot;px&quot;&quot;&gt;&quot; &amp; CR )
       If ShowGrid Then
-        oOutputStream.writeString( &quot;  &lt;rect stroke-width=&quot;&quot;1&quot;&quot; stroke=&quot;&quot;blue&quot;&quot; fill=&quot;&quot;none&quot;&quot; x=&quot;&quot;&quot; &amp; LeftMargin &amp; &quot;px&quot;&quot; y=&quot;&quot;&quot; &amp; TopMargin &amp; &quot;px&quot;&quot; width=&quot;&quot;&quot; &amp; Width &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Height &amp; &quot;px&quot;&quot; /&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;rect stroke-width=&quot;&quot;1&quot;&quot; stroke=&quot;&quot;blue&quot;&quot; fill=&quot;&quot;none&quot;&quot; x=&quot;&quot;&quot; &amp; LeftMargin &amp; &quot;px&quot;&quot; y=&quot;&quot;&quot; &amp; TopMargin &amp; &quot;px&quot;&quot; width=&quot;&quot;&quot; &amp; Width &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Height &amp; &quot;px&quot;&quot; /&gt;&quot; &amp; CR )
       End If
-      oOutputStream.writeString( &quot;  &lt;g font-family=&quot;&quot;&quot; &amp; CharFontNameAsian &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(CharHeightAsian, kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot;&lt;g font-family=&quot;&quot;&quot; &amp; CharFontNameAsian &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(CharHeightAsian, kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; CR )
       If ShowGrid Then
         x = LeftMargin + WidthPerAGrid * (GridLines - 1)
         For w = 1 To GridLines
           y = TopMargin
           h = 1
           Do Until h &gt; CharactersPerLine
-            oOutputStream.writeString( &quot;  &lt;rect stroke-width=&quot;&quot;1&quot;&quot; stroke=&quot;&quot;lime&quot;&quot; fill=&quot;&quot;none&quot;&quot; x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;px&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC)  &amp; &quot;px&quot;&quot; width=&quot;&quot;&quot; &amp; Format(HeightPerAGrid, kFRAC) &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Format(HeightPerAGrid, kFRAC) &amp; &quot;px&quot;&quot; /&gt;&quot; &amp; CR )
+            oOutputStream.writeString( &quot;&lt;rect stroke-width=&quot;&quot;1&quot;&quot; stroke=&quot;&quot;lime&quot;&quot; fill=&quot;&quot;none&quot;&quot; x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;px&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC)  &amp; &quot;px&quot;&quot; width=&quot;&quot;&quot; &amp; Format(HeightPerAGrid, kFRAC) &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Format(HeightPerAGrid, kFRAC) &amp; &quot;px&quot;&quot; /&gt;&quot; &amp; CR )
 			y = y + HeightPerAGrid
             h = h + 1
           Loop
@@ -270,7 +270,7 @@ Sub ChangeWriting(MyEpub As String)
                     y = y - (HeightPerAGrid / 2)
                     ascii = TRUE
                   End If
-                  oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(CharHeight, kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                  oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(CharHeight, kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                   If eType = &quot;+&quot; Then
                     pos = pos + 1
                   End If
@@ -288,7 +288,7 @@ Sub ChangeWriting(MyEpub As String)
                 Dim dy As Double
                 dx = CharHeightAsian * 12 / 14
                 dy = -dx
-                oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; transform=&quot;&quot;translate(&quot; &amp; Format(dx, kFRAC) &amp; &quot;,&quot; &amp; Format(dy, kFRAC) &amp; &quot;)&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; transform=&quot;&quot;translate(&quot; &amp; Format(dx, kFRAC) &amp; &quot;,&quot; &amp; Format(dy, kFRAC) &amp; &quot;)&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                 If eType = &quot;+&quot; Then
                   pos = pos + 1
                 End If
@@ -303,7 +303,7 @@ Sub ChangeWriting(MyEpub As String)
                 End If
               &apos;---- end bracket
               ElseIf p1 &gt; 0 Then
-                oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(END_BRACKETS_V, p1, 1) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(END_BRACKETS_V, p1, 1) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                 If eType = &quot;+&quot; Then
                   pos = pos + 1
                 End If
@@ -319,7 +319,7 @@ Sub ChangeWriting(MyEpub As String)
               &apos;---- begin bracket
               ElseIf p2 &gt; 0 Then
                 If h &lt;= CharactersPerLine Then
-                  oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(BEGIN_BRACKETS_V, p2, 1) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                  oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(BEGIN_BRACKETS_V, p2, 1) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                   If eType = &quot;+&quot; Then
                     pos = pos + 1
                   End If
@@ -340,15 +340,15 @@ Sub ChangeWriting(MyEpub As String)
                   End If
                   If char = &quot;ー&quot; Then
                     If att = &quot;&quot; Then
-                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format((y - CharHeightAsian), kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                      oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format((y - CharHeightAsian), kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                     Else
-                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format((y - CharHeightAsian), kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format((CharHeight + 4), kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                      oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format((y - CharHeightAsian), kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format((CharHeight + 4), kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                     End If
                   Else
                     If att = &quot;&quot; Then
-                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                      oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                     Else
-                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format((CharHeight + 4), kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                      oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format((CharHeight + 4), kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
                     End If
                   End If
                   If eType = &quot;+&quot; Then
@@ -401,32 +401,32 @@ Sub ChangeWriting(MyEpub As String)
             y = baseTextTop + rubyTextPitch
           End If
           For t = 1 To Len(rt(r_))
-            oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(RubyFontHeight, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(rt(r_), t, 1)  &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+            oOutputStream.writeString( &quot;&lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(RubyFontHeight, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(rt(r_), t, 1)  &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
             y = y + rubyTextPitch
           Next t
         Next r_
         r = -1
       End If
-      oOutputStream.writeString( &quot;  &lt;/g&gt;&quot; &amp; CR )
-      oOutputStream.writeString( &quot;  &lt;/svg&gt;&quot; &amp; CR )
-      oOutputStream.writeString( &quot; &lt;/body&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot;&lt;/g&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot;&lt;/svg&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot;&lt;/body&gt;&quot; &amp; CR )
       oOutputStream.writeString( &quot;&lt;/html&gt;&quot; &amp; CR )
       If pos &lt; Len(sParas) Then
         oOutputStream.flush()
         oOutputStream.closeOutput()
         iSVGNumber = iSVGNumber + 1
-        vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/&quot; &amp; Format(iSVGNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+        vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/OEBPS/text/&quot; &amp; Format(iSVGNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
         oOutputStream.setOutputStream(vOutputData)
         oOutputStream.setEncoding(&quot;UTF-8&quot;)
         oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR )
         oOutputStream.writeString( &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR )
         oOutputStream.writeString( &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR )
         oOutputStream.writeString( &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xmlns:xml=&quot;&quot;http://www.w3.org/XML/1998/namespace&quot;&quot; xml:lang=&quot;&quot;ja&quot;&quot;&gt;&quot; &amp; CR )
-        oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
-        oOutputStream.writeString( &quot;  &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot; /&gt;&quot; &amp; CR )
-        oOutputStream.writeString( &quot;  &lt;title&gt;&quot; &amp; MetaTitle &amp; &quot; (&quot; &amp; iSVGNumber &amp; &quot;)&lt;/title&gt;&quot; &amp; CR )
-        oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
-        oOutputStream.writeString( &quot; &lt;body&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;head&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot; /&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;title&gt;&quot; &amp; MetaTitle &amp; &quot; (&quot; &amp; iSVGNumber &amp; &quot;)&lt;/title&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;/head&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;body&gt;&quot; &amp; CR )
       Else
         Exit Do
       End If
@@ -438,13 +438,13 @@ Sub ChangeWriting(MyEpub As String)
   iSVGNumbers = iSVGNumber
   &apos;---- kill contentxxxx.xhtml
   For iContentNumber = 0 To iContentNumbers
-    Kill(MyEpubFolder &amp; &quot;/text/&quot; &amp; contentXhtmls(iContentNumber))
+    Kill(MyEpubFolder &amp; &quot;/OEBPS/text/&quot; &amp; contentXhtmls(iContentNumber))
   Next iContentNumber
   &apos;---- rename xxxx.xhtml As contentxxxx.xhtml
-  NextFile = Dir(MyEpubFolder &amp; &quot;/text/&quot;, 0)
+  NextFile = Dir(MyEpubFolder &amp; &quot;/OEBPS/text/&quot;, 0)
   While NextFile &lt;&gt; &quot;&quot;
     If Right(NextFile, 5) = &quot;xhtml&quot; Then
-      Name MyEpubFolder &amp; &quot;/text/&quot; &amp; NextFile As MyEpubFolder &amp; &quot;/text/content&quot; &amp; NextFile
+      Name MyEpubFolder &amp; &quot;/OEBPS/text/&quot; &amp; NextFile As MyEpubFolder &amp; &quot;/OEBPS/text/content&quot; &amp; NextFile
     End If
     NextFile = Dir
   WEnd

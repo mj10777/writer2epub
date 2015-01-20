@@ -13,8 +13,6 @@
 	Private sTitle As string					&apos;Title shown in eReader 
 
 	Private sStartPageCode As string
-	Private replace_StartPageCode As string
-	Private replace_TitleText As string
 	Private sEndPageCode As string
 	Private bBreak As Integer
 	Private bFirstpage As Boolean
@@ -43,7 +41,6 @@ Sub TraverseText( TraverseSimulate As Boolean)
 	Dim MyListType As String
 	Dim curListLevel As Integer
 	Dim prevListLevel As Integer	
- Const replace_title As String = &quot;#replace_title#&quot;
 	
 	oBMarks=oDoc.getBookmarks
 	&apos;clean sToc content
@@ -79,13 +76,13 @@ Sub TraverseText( TraverseSimulate As Boolean)
 		sStartPageCode = sStartPageCode &amp; &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot; &amp; CR
 	End If
   
-	sStartPageCode = sStartPageCode &amp; &quot; &lt;head&gt;&quot; &amp; CR
-	sStartPageCode = sStartPageCode &amp; &quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR
-	sStartPageCode = sStartPageCode &amp; &quot;  &lt;title&gt;&quot;&amp; replace_title &amp; &quot;&lt;/title&gt;&quot; &amp; CR
-	sStartPageCode = sStartPageCode &amp; &quot; &lt;/head&gt;&quot; &amp; CR
-	sStartPageCode = sStartPageCode &amp; &quot; &lt;body&gt;&quot;
+	sStartPageCode = sStartPageCode &amp; &quot;&lt;head&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;&lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style001.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;&lt;title&gt;&lt;/title&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;&lt;/head&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;&lt;body&gt;&quot; &amp; CR
 
-	sEndPageCode = &quot; &lt;/body&gt;&quot; &amp; CR
+    sEndPageCode = &quot;&lt;/body&gt;&quot; &amp; CR
 	sEndPageCode = sEndPageCode &amp; &quot;&lt;/html&gt;&quot; &amp; CR 
 	iImageCount = 0
 	
@@ -105,7 +102,7 @@ Sub TraverseText( TraverseSimulate As Boolean)
 		nFoot=0
 		fnOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 		fnOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-		fnOutputData   = fnOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/footnotes.xhtml&quot;)
+		fnOutputData   = fnOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/OEBPS/text/footnotes.xhtml&quot;)
 		fnOutputStream.setOutputStream(fnOutputData)
 		fnOutputStream.setEncoding(&quot;UTF-8&quot;)
 		fnOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR )
@@ -116,21 +113,19 @@ Sub TraverseText( TraverseSimulate As Boolean)
 		Else
 			fnOutputStream.writeString(&quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot; &amp; CR)
 		End If	
-		fnOutputStream.writeString(&quot; &lt;head&gt;&quot;)	
-		fnOutputStream.writeString(&quot;  &lt;title&gt;&lt;/title&gt;&quot; &amp; CR)
-		fnOutputStream.writeString(&quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR)
-		fnOutputStream.writeString(&quot; &lt;/head&gt;&quot; &amp; CR)
-		&apos;		fnOutputStream.writeString(&quot;&quot; &amp; CR)
-		fnOutputStream.writeString(&quot; &lt;body&gt;&quot;)
+		fnOutputStream.writeString(&quot;&lt;head&gt;&quot;)	
+		fnOutputStream.writeString(&quot;&lt;title&gt;&lt;/title&gt;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot;&lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style001.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot;&lt;/head&gt;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot;&lt;body&gt;&quot; &amp; CR)
 		
 		oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 		oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-		vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+		vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/OEBPS/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
 		oOutputStream.setOutputStream(vOutputData)
 		oOutputStream.setEncoding(&quot;UTF-8&quot;)
-		&apos;oOutputStream.writeString( sStartPageCode &amp; CR )
-  replace_StartPageCode=&quot;&quot;
-  replace_TitleText=&quot;&quot;
+		oOutputStream.writeString( sStartPageCode &amp; CR )
 	EndIf
 	&apos;---- Show the progress bar
 	nPara = oDoc.ParagraphCount
@@ -186,15 +181,6 @@ Sub TraverseText( TraverseSimulate As Boolean)
 &apos;---- Call Paragraph analysis ------------
 
 			sParEx = fnExportParagraph(oPar,TraverseSimulate)
-   If sTOC (iTocCount, 1) &lt;&gt; replace_TitleText Then
-			 replace_TitleText=sTOC (iTocCount, 1) 
-    if replace_StartPageCode = &quot;&quot; Then
-			  replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
-			  oOutputStream.writeString( replace_StartPageCode &amp; CR )
-    Else
-     replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
-    End If
-   End If
 				    
 &apos;------- lists handling ------------
 	    
@@ -283,10 +269,10 @@ Sub TraverseText( TraverseSimulate As Boolean)
 						oOutputStream.writeString( sEndPageCode &amp; CR )
 						oOutputStream.flush()
 						oOutputStream.closeOutput()				
-						vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+						vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/OEBPS/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
 						oOutputStream.setOutputStream(vOutputData)
 						oOutputStream.setEncoding(&quot;UTF-8&quot;)
-						oOutputStream.writeString( replace_StartPageCode &amp; CR )
+						oOutputStream.writeString( sStartPageCode &amp; CR )
 						oOutputStream.writeString( sParEx &amp; CR )	
 					End If
 				Else
@@ -303,10 +289,10 @@ Sub TraverseText( TraverseSimulate As Boolean)
 					oOutputStream.writeString( sEndPageCode &amp; CR )
 					oOutputStream.flush()
 					oOutputStream.closeOutput()				
-					vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+					vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/OEBPS/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
 					oOutputStream.setOutputStream(vOutputData)
 					oOutputStream.setEncoding(&quot;UTF-8&quot;)
-					oOutputStream.writeString( replace_StartPageCode &amp; CR )
+					oOutputStream.writeString( sStartPageCode &amp; CR )
 				Endif
 				
 			End Select
@@ -333,12 +319,12 @@ Sub TraverseText( TraverseSimulate As Boolean)
 		oOutputStream.flush()
 		oOutputStream.closeOutput()
 
-		fnOutputStream.writeString(&quot; &lt;/body&gt;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot;&lt;/body&gt;&quot; &amp; CR)
 		fnOutputStream.writeString(&quot;&lt;/html&gt;&quot; &amp; CR)
 		fnOutputStream.closeOutput()
 		If nFoot = 0 Then
 			&apos;deleting the empty footnotes file
-			Kill (MyEpubFolder &amp; &quot;/text/footnotes.xhtml&quot;)
+			Kill (MyEpubFolder &amp; &quot;/OEBPS/text/footnotes.xhtml&quot;)
 		End If
 	EndIf
 	
@@ -458,7 +444,7 @@ function fnExportParagraph(oParagraph As Object, TraverseSimulate As boolean) As
 					
 			else						&apos;Empty paragraph
 &apos;				sPortion = &quot;&lt;br /&gt;&quot;
-          sPortion = &quot;&amp;nbsp;&quot; 	&apos;must be &quot;&lt;br /&gt;&quot; but a non-breakable space is request to correct an ADE bug
+	        	sPortion = &quot;&amp;nbsp;&quot; 	&apos;must be &quot;&lt;br /&gt;&quot; but a non-breakable space is request to correct an ADE bug
 			end if
 			 
 			If RubyText &lt;&gt; &quot;&quot; Then
@@ -491,9 +477,9 @@ function fnExportParagraph(oParagraph As Object, TraverseSimulate As boolean) As
 			If TraverseSimulate=False Then
 				If Right(sFootText, 4) = &quot;&lt;/p&gt;&quot; Then
 						sFootText= Mid(sFootText,1, Len(sFootText)-4 ) &apos;cut off the last &lt;/p&gt; for nesting the return symbol
-						fnOutputStream.writeString(&quot; &lt;div class=&quot;&quot;footnote&quot;&quot; id=&quot;&quot;footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&quot; &amp; nFoot &amp; &quot;) &quot; &amp; sFootText &amp; &quot; &lt;a href=&quot;&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml#fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt; &lt;strong&gt;&#x21B5;&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;&lt;/div&gt;&quot; &amp; CR)		
+						fnOutputStream.writeString(&quot;&lt;div class=&quot;&quot;footnote&quot;&quot; id=&quot;&quot;footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&quot; &amp; nFoot &amp; &quot;) &quot; &amp; sFootText	&amp; &quot; &lt;a href=&quot;&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml#fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt; &lt;strong&gt;&amp;#x21B5;&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;&lt;/div&gt;&quot; &amp; CR)		
 				Else
-						fnOutputStream.writeString(&quot; &lt;div class=&quot;&quot;footnote&quot;&quot; id=&quot;&quot;footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&quot; &amp; nFoot &amp; &quot;) &quot; &amp; sFootText &amp; &quot; &lt;a href=&quot;&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml#fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt; &lt;strong&gt;&#x21B5;&lt;/strong&gt;&lt;/a&gt;&lt;/div&gt;&quot; &amp; CR)
+						fnOutputStream.writeString(&quot;&lt;div class=&quot;&quot;footnote&quot;&quot; id=&quot;&quot;footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&quot; &amp; nFoot &amp; &quot;) &quot; &amp; sFootText	&amp; &quot; &lt;a href=&quot;&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml#fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt; &lt;strong&gt;&amp;#x21B5;&lt;/strong&gt;&lt;/a&gt;&lt;/div&gt;&quot; &amp; CR)
 				EndIf
 			
 			fnOutputStream.flush()
@@ -592,7 +578,7 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 2) = 1
 			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-			sStr = &quot;  &lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h1&gt;&quot; 
+			sStr = &quot;&lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h1&gt;&quot; 
 		Case &quot;heading 2&quot;
 			If iTocLevel &lt; 2 Then iTocLevel = 2
 			iTocCount = iTocCount + 1
@@ -600,7 +586,7 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 2) = 2
 			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
-			sStr = &quot;  &lt;h2 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h2&gt;&quot;
+			sStr = &quot;&lt;h2 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h2&gt;&quot;
 		Case &quot;heading 3&quot;
 			If iTocLevel &lt; 3 Then iTocLevel = 3
 			iTocCount = iTocCount + 1
@@ -608,7 +594,7 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 2) = 3
 			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
-			sStr = &quot;  &lt;h3 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h3&gt;&quot;
+			sStr = &quot;&lt;h3 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h3&gt;&quot;
 		Case &quot;heading 4&quot;
 			If iTocLevel &lt; 4 Then iTocLevel = 4
 			iTocCount = iTocCount + 1 
@@ -616,7 +602,7 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 2) = 4
 			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
-			sStr = &quot;  &lt;h4 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h4&gt;&quot;
+			sStr = &quot;&lt;h4 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h4&gt;&quot;
 		Case &quot;heading 5&quot;
 			If iTocLevel &lt; 5 Then iTocLevel = 5
 			iTocCount = iTocCount + 1
@@ -624,7 +610,7 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 2) = 5
 			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-			sStr = &quot;  &lt;h5 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h5&gt;&quot;
+			sStr = &quot;&lt;h5 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h5&gt;&quot;
 		Case &quot;heading 6&quot;,&quot;heading 7&quot;,&quot;heading 8&quot;,&quot;heading 9&quot;, &quot;heading 10&quot;
 			If iTocLevel &lt; 6 Then iTocLevel = 6
 			iTocCount = iTocCount + 1
@@ -632,31 +618,31 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 2) = 6
 			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
-			sStr = &quot; &lt;h6 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h6&gt;&quot;
+			sStr = &quot;&lt;h6 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h6&gt;&quot;
 		Case &quot;title&quot; 
-			sStr = &quot;  &lt;p class=&quot;&quot;title&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+			sStr = &quot;&lt;p class=&quot;&quot;title&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
 		Case &quot;subtitle&quot; 
-			sStr = &quot;  &lt;p class=&quot;&quot;subtitle&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+			sStr = &quot;&lt;p class=&quot;&quot;subtitle&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
 		Case &quot;caption&quot; 
-			sStr = &quot;  &lt;p class=&quot;&quot;caption&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+			sStr = &quot;&lt;p class=&quot;&quot;caption&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
 		Case &quot;quotations&quot; 
-			sStr = &quot;  &lt;p class=&quot;&quot;quotations&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+			sStr = &quot;&lt;p class=&quot;&quot;quotations&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
 		Case &quot;marginalia&quot; 
-			sStr = &quot;  &lt;p class=&quot;&quot;marginalia&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+			sStr = &quot;&lt;p class=&quot;&quot;marginalia&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
 		Case &quot;text body indent&quot; 
-			sStr = &quot;  &lt;p class=&quot;&quot;noindent&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+			sStr = &quot;&lt;p class=&quot;&quot;noindent&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
 		Case &quot;illustration&quot; 
-			sStr = &quot;  &lt;p class=&quot;&quot;illustration&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;	
+			sStr = &quot;&lt;p class=&quot;&quot;illustration&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;	
 		Case &quot;horizontal line&quot; 
-			sStr = &quot; &lt;hr /&gt; &quot;       &apos;adding previous sStr should not be necessary! 
+			sStr = &quot;&lt;hr /&gt; &quot;       &apos;adding previous sStr should not be necessary! 
 			oPar.ParaStyleName=&quot;Standard&quot;   &apos;70%: just because I like it so. Change it if you want! 
 		Case &quot;preformatted text&quot; 
-			sStr = &quot; &lt;pre&gt;&quot; &amp; sStr &amp; &quot;&lt;/pre&gt;&quot;
+			sStr = &quot;&lt;pre&gt;&quot; &amp; sStr &amp; &quot;&lt;/pre&gt;&quot;
 		Case Else
 			If Left (lcase (sStyle),4) = &quot;w2e_&quot; Then
 				sStr = PersonalStyleHandler (oPar) &amp; sStr &amp; &quot;&lt;/p&gt;&quot; 
-			ElseIf Left (sStr,4) &lt;&gt; &quot;&lt;div&quot; and  Left (sStr,6) &lt;&gt; &quot;  &lt;div&quot; Then
-				sStr = &quot;  &lt;p&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;&apos; &amp; CR
+			ElseIf Left (sStr,4) &lt;&gt; &quot;&lt;div&quot; Then
+				sStr = &quot;&lt;p&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;&apos; &amp; CR
 			End If
 	End Select 
 
@@ -700,7 +686,7 @@ Function fnSmallCaps( sStr As String ) As String
 				i = i + 1
 				c = Mid( sStr, i, 1 ) 	
 			Loop
-  Case &quot;&amp;&quot;	
+		Case &quot;&amp;&quot;	
 		&apos;is it a &amp; charachter? Jump to ;
 			Do Until c = &quot;;&quot;
 				cResult = cResult &amp; c
@@ -709,13 +695,13 @@ Function fnSmallCaps( sStr As String ) As String
 			Loop
 		Case &quot;a&quot; To &quot;z&quot;,&quot;à&quot; To &quot;ÿ&quot;,&quot;ā&quot;,&quot;ă&quot;,&quot;ą&quot;,&quot;ć&quot;,&quot;ĉ&quot;,&quot;ċ&quot;,&quot;č&quot;,&quot;ď&quot;,&quot;đ&quot;,&quot;ē&quot;,&quot;ĕ&quot;,&quot;ė&quot;,&quot;ę&quot;,&quot;ě&quot;,&quot;ĝ&quot;,&quot;ğ&quot;,&quot;ġ&quot;,&quot;ģ&quot;,&quot;ĥ&quot;,&quot;ħ&quot;,&quot;ĩ&quot;,&quot;ī&quot;,&quot;ĭ&quot;,&quot;į&quot;,&quot;ı&quot;,&quot;ĳ&quot;,&quot;ĵ&quot;,&quot;ķ&quot;,&quot;ĸ&quot;,&quot;ĺ&quot;,&quot;ļ&quot;,&quot;ľ&quot;,&quot;ŀ&quot;,&quot;ł&quot;,&quot;ń&quot;,&quot;ņ&quot;,&quot;ň&quot;,&quot;ŉ&quot;,&quot;ŋ&quot;,&quot;ō&quot;,&quot;ŏ&quot;,&quot;ő&quot;,&quot;œ&quot;,&quot;ŕ&quot;,&quot;ŗ&quot;,&quot;ř&quot;,&quot;ś&quot;,&quot;ŝ&quot;,&quot;ş&quot;,&quot;š&quot;,&quot;ţ&quot;,&quot;ť&quot;,&quot;ŧ&quot;,&quot;ũ&quot;,&quot;ū&quot;,&quot;ŭ&quot;,&quot;ů&quot;,&quot;ű&quot;,&quot;ų&quot;,&quot;ŵ&quot;,&quot;ŷ&quot;,&quot;ź&quot;,&quot;ż&quot;,&quot;ž&quot;,&quot;ſ&quot;,&quot;ƀ&quot;,&quot;ƃ&quot;,&quot;ƅ&quot;,&quot;ƈ&quot;,&quot;ƙ&quot;,&quot;ƞ&quot;,&quot;ơ&quot;,&quot;ƣ&quot;,&quot;ƥ&quot;,&quot;ƨ&quot;,&quot;ƪ&quot;,&quot;ƫ&quot;,&quot;ƭ&quot;,&quot;ư&quot;,&quot;Ʋ&quot;,&quot;ƴ&quot;,&quot;ƶ&quot;,&quot;ƹ&quot;,&quot;ƺ&quot;,&quot;ƽ&quot;,&quot;ƾ&quot;,&quot;ƿ&quot;,&quot;ǆ&quot;,&quot;ǉ&quot;,&quot;ǌ&quot;,&quot;ǎ&quot;,&quot;ǐ&quot;,&quot;ǒ&quot;,&quot;ǔ&quot;,&quot;ǖ&quot;,&quot;ǘ&quot;,&quot;ǚ&quot;,&quot;ǜ&quot;,&quot;ǟ&quot;,&quot;ǡ&quot;,&quot;ǣ&quot;,&quot;ǥ&quot;,&quot;ǧ&quot;,&quot;ǩ&quot;,&quot;ǫ&quot;,&quot;ǯ&quot;,&quot;ǳ&quot;,&quot;ǵ&quot;,&quot;ǹ&quot;,&quot;ǻ&quot;,&quot;ǽ&quot;,&quot;ǿ&quot;,&quot;ȁ&quot;,&quot;ȃ&quot;,&quot;ȅ&quot;,&quot;ȇ&quot;,&quot;ȉ&quot;,&quot;ȋ&quot;,&quot;ȍ&quot;,&quot;ȏ&quot;,&quot;ȑ&quot;,&quot;ȓ&quot;,&quot;ȕ&quot;,&quot;ȗ&quot;,&quot;ș&quot;,&quot;ț&quot;,&quot;ȝ&quot;,&quot;ȟ&quot;,&quot;ȣ&quot;,&quot;ȥ&quot;,&quot;ȧ&quot;,&quot;ȩ&quot;,&quot;ȫ&quot;,&quot;ȭ&quot;,&quot;ȯ&quot;,&quot;ȱ&quot;,&quot;ȳ&quot;
 		&apos;is it a lowercase letter?
-			c = &quot; &lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot; &amp; Ucase (c) &amp; &quot;&lt;/span&gt;&quot;
+			c = &quot;&lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot; &amp; Ucase (c) &amp; &quot;&lt;/span&gt;&quot;
 		End Select
 		cResult = cResult &amp; c
 	Next 
 
 	&apos;Remove redundant tags
-	Do While InStr(cResult, &quot; &lt;/span&gt;&lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot;)&gt;0
+	Do While InStr(cResult, &quot;&lt;/span&gt;&lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot;)&gt;0
 		Mid (cResult, InStr(cResult, &quot;&lt;/span&gt;&lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot;), 35, &quot;&quot;)
 &apos;	Do While InStr(cResult, &quot;&lt;/small&gt;&lt;small&gt;&quot;)&gt;0
 &apos;		Mid (cResult, InStr(cResult, &quot;&lt;/small&gt;&lt;small&gt;&quot;), 15, &quot;&quot;)
@@ -745,7 +731,7 @@ Function fnFootnoteDirectFormat(oFtn As object) As String
     If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then 
       oSectionEnum = oPar.createEnumeration() 
    &apos;   If sTxt &lt;&gt; &quot;&quot;   Then         &apos;Starting footnote&apos;s second paragraph 
-         sTxt = sTxt &amp; Chr(10) &amp; &quot;  &lt;p class=&quot;&quot;fnparagraph&quot;&quot;&gt;&quot;    &apos;on new line 
+         sTxt = sTxt &amp; Chr(10) &amp; &quot;&lt;p class=&quot;&quot;fnparagraph&quot;&quot;&gt;&quot;    &apos;on new line 
     &apos;  End If 
       Do While oSectionEnum.hasMoreElements() 
         oSection = oSectionEnum.nextElement() 
@@ -818,7 +804,7 @@ Function PersonalStyleHandler (oPar as Object) As String
 	End If
 
 	
-	PersonalStyleHandler =	&quot;  &lt;p class=&quot;&quot;&quot; &amp; myParaStyleName &amp; &quot;&quot;&quot;&gt;&quot;		
+	PersonalStyleHandler =	&quot;&lt;p class=&quot;&quot;&quot; &amp; myParaStyleName &amp; &quot;&quot;&quot;&gt;&quot;		
 End Function
 
 &apos;_______________________________________________________________________________________________________________________________
@@ -856,7 +842,7 @@ Function fnTablesDirectFormat(oCel As object) As String
              sPortion = &quot;&lt;em&gt;&quot; &amp; sPortion &amp; &quot;&lt;/em&gt;&quot; 
            end if 
            if oSection.CharUnderline &gt; 0 THEN 
-             sPortion = &quot; &lt;span class=&apos;underline&apos;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+             sPortion = &quot;&lt;span class=&apos;underline&apos;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
              &apos;sPortion = &quot;&lt;u&gt;&quot; &amp; sPortion &amp; &quot;&lt;/u&gt;&quot; 
            end if 
            sTxt = sTxt &amp; sPortion 
@@ -1025,18 +1011,18 @@ Function fnExportTable(oTable As Object) As String
                 sCell = trim(sCell)
                 select case oTextElement.paraAdjust
                 case com.sun.star.style.ParagraphAdjust.CENTER
-                        sCell = &quot;  &lt;p class=&apos;center&apos;&gt;&quot; &amp; sCell &amp; &quot;&lt;/p&gt;&quot;
+                        sCell = &quot;&lt;p class=&apos;center&apos;&gt;&quot; &amp; sCell &amp; &quot;&lt;/p&gt;&quot;
                 case com.sun.star.style.ParagraphAdjust.RIGHT
-                        sCell = &quot;  &lt;p class=&apos;right&apos;&gt;&quot; &amp; sCell &amp; &quot;&lt;/p&gt;&quot;
+                        sCell = &quot;&lt;p class=&apos;right&apos;&gt;&quot; &amp; sCell &amp; &quot;&lt;/p&gt;&quot;
                 end select
                 mCells(nRow, nCol) = sCell
         next
 
       
-sReturn = &quot; &lt;table border=&quot;&quot;1&quot;&quot; cellpadding=&quot;&quot;1&quot;&quot; cellspacing=&quot;&quot;2&quot;&quot; rules=&quot;&quot;all&quot;&quot; width=&quot;&quot;&quot; &amp; tableWidth &amp; &quot;%&quot;&quot;&gt;&quot; &amp; CR
+sReturn = &quot;&lt;table border=&quot;&quot;1&quot;&quot; cellpadding=&quot;&quot;1&quot;&quot; cellspacing=&quot;&quot;2&quot;&quot; rules=&quot;&quot;all&quot;&quot; width=&quot;&quot;&quot; &amp; tableWidth &amp; &quot;%&quot;&quot;&gt;&quot; &amp; CR
 
 For i = 0 to nRows
-	sReturn = sReturn &amp; &quot;  &lt;tr&gt;&quot; &amp; CR
+	sReturn = sReturn &amp; &quot;&lt;tr&gt;&quot; &amp; CR
 	For j = 0 to nMaxCols
 &apos;		mCells (i,j) = fnExportParagraph (mCells (i,j))
 		
@@ -1046,11 +1032,11 @@ For i = 0 to nRows
 &apos;			mCells (i,j) = Replace (mCells (i,j), &quot;&apos;&quot;, &quot;&amp;apos;&quot;)
 &apos;			mCells (i,j) = Replace (mCells (i,j), &quot;&quot;&quot;&quot;, &quot;&amp;quot;&quot;)
 			
-		sReturn = sReturn &amp; &quot;   &lt;td&gt;&quot; &amp; mCells (i,j) &amp; &quot;  &lt;/td&gt;&quot; &amp; CR 
+		sReturn = sReturn &amp; &quot;  &lt;td&gt;&quot; &amp; mCells (i,j) &amp; &quot;  &lt;/td&gt;&quot; &amp; CR 
 	Next j
-	sReturn = sReturn &amp; &quot;  &lt;/tr&gt;&quot; &amp; CR
+	sReturn = sReturn &amp; &quot;&lt;/tr&gt;&quot; &amp; CR
 Next i
-sReturn = sReturn &amp; &quot; &lt;/table&gt;&quot;
+sReturn = sReturn &amp; &quot;&lt;/table&gt;&quot;
 
 fnExportTable() = sReturn
 

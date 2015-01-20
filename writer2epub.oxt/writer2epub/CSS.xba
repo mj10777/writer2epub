@@ -11,366 +11,355 @@ Sub CreateCSSFile (MyEpub As string)
 	Dim FontString As String
 	Dim BorderIsPresent As Boolean
 		
-	embeddedFontNormal = &quot;Comic Sans MS&quot;
-	embeddedFontBold = &quot;Comic Sans MS&quot;
-	FontNormalURL = &quot;fonts/comic.ttf&quot;
-	FontBoldURL = &quot;fonts/comicbd.ttf&quot;
-		
-	FontString = &quot;@font-face &quot; &amp; CR
-	FontString = FontString &amp; &quot;{&quot; &amp; CR
-	FontString = FontString &amp; &quot; font-family: &quot;&quot;&quot; &amp; embeddedFontNormal &amp; &quot;&quot;&quot;;&quot; &amp; CR
-	FontString = FontString &amp; &quot; font-weight: normal;&quot; &amp; CR
-	FontString = FontString &amp; &quot; font-style: normal;&quot; &amp; CR
-	FontString = FontString &amp; &quot; src: url(&quot; &amp; FontNormalURL &amp; &quot;);&quot; &amp; CR
+	FontString = &quot;@font-face {&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-family: &quot;&quot;&quot; &amp; embeddedFontNormal &amp; &quot;;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-weight: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-style: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;src: url(&quot; &amp; FontNormalURL &amp; &quot;);&quot; &amp; CR
 	FontString = FontString &amp; &quot;}&quot; &amp; CR
-	FontString = FontString &amp; &quot;@font-face &quot; &amp; CR
-	FontString = FontString &amp; &quot;{&quot; &amp; CR
-	FontString = FontString &amp; &quot; font-family: &quot;&quot;&quot; &amp; embeddedFontBold &amp; &quot;&quot;&quot;;&quot; &amp; CR
-	FontString = FontString &amp; &quot; font-weight: normal;&quot; &amp; CR
-	FontString = FontString &amp; &quot; font-style: normal;&quot; &amp; CR
-	FontString = FontString &amp; &quot; src: url(&quot; &amp; FontBoldURL &amp; &quot;);&quot; &amp; CR
+	FontString = FontString &amp; &quot;@font-face {&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-family: &quot;&quot;&quot; &amp; embeddedFontBold &amp; &quot;;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-weight: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-style: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;src: url(&quot; &amp; FontBoldURL &amp; &quot;);&quot; &amp; CR
 	FontString = FontString &amp; &quot;}&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;@font-face &quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;{&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot; font-family: &quot;&quot;&quot; &amp; embeddedFontItalic &amp; &quot;;&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot; font-weight: normal;&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot; font-style: normal;&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot; src: url(&quot; &amp; FontItalicURL &amp; &quot;);&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;}&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;@font-face &quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;{&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;font-family: &quot;&quot;&quot; &amp; embeddedFontBoldItalic &amp; &quot;;&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;font-weight: normal;&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;font-style: normal;&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;src: url(&quot; &amp; FontBoldItalicURL &amp; &quot;);&quot; &amp; CR
-&apos;	FontString = FontString &amp; &quot;}&quot; &amp; CR
+	FontString = FontString &amp; &quot;@font-face {&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-family: &quot;&quot;&quot; &amp; embeddedFontItalic &amp; &quot;;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-weight: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-style: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;src: url(&quot; &amp; FontItalicURL &amp; &quot;);&quot; &amp; CR
+	FontString = FontString &amp; &quot;}&quot; &amp; CR
+	FontString = FontString &amp; &quot;@font-face {&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-family: &quot;&quot;&quot; &amp; embeddedFontBoldItalic &amp; &quot;;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-weight: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;font-style: normal;&quot; &amp; CR
+	FontString = FontString &amp; &quot;src: url(&quot; &amp; FontBoldItalicURL &amp; &quot;);&quot; &amp; CR
+	FontString = FontString &amp; &quot;}&quot; &amp; CR
 
 	
-	Open MyEpubFolder + &quot;/styles/style_epub.css&quot; For Output As #1
+	Open MyEpubFolder + &quot;/OEBPS/styles/style001.css&quot; For Output As #1
 	
 	Print #1, &quot;@namespace h &quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;;&quot;
 	Print #1, &quot;@page&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin: 5pt;&quot;
-	Print #1, &quot;}&quot;
-	Print #1, FontString
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin: 5pt;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;body&quot;
-	Print #1, &quot;{&quot;
-&apos;	Print #1, &quot;-webkit-text-size-adjust: none;&quot;
-&apos;	Print #1, &quot;font-family: &quot; &amp; myPrefs.getPropertyValue(&quot;BaseFont&quot;) &amp; &quot;, Garamond, serif, sansserif, monospace;&quot;
-	Print #1, &quot; font-family: &quot;&quot;&quot; &amp; embeddedFontNormal &amp; &quot;&quot;&quot;;&quot;
-&apos;	Print #1, &quot; font-family: &quot;&quot;&quot; &amp; getPrefValue(&quot;BaseFont&quot;) &amp; &quot;&quot;&quot;, serif, sansserif;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+&apos;	Print #1, &quot;    -webkit-text-size-adjust: none;&quot;
+&apos;	Print #1, &quot;    font-family: &quot; &amp; myPrefs.getPropertyValue(&quot;BaseFont&quot;) &amp; &quot;, Garamond, serif, sansserif, monospace;&quot;
+	Print #1, &quot;    font-family: &quot;&quot;&quot; &amp; getPrefValue(&quot;BaseFont&quot;) &amp; &quot;&quot;&quot;, serif, sansserif;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;p&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin:0pt;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot; line-height: 1em;&quot;
-	Print #1, &quot; text-align: justify;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
-	Print #1, &quot; widows: &quot; &amp; getPrefValue (&quot;Widows&quot;) &amp; &quot;;&quot;
-	Print #1, &quot; orphans: &quot; &amp; getPrefValue (&quot;Orphans&quot;) &amp; &quot;;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin:0pt;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    line-height: 1em;&quot;
+	Print #1, &quot;    text-align: justify;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
+	Print #1, &quot;    widows: &quot; &amp; getPrefValue (&quot;Widows&quot;) &amp; &quot;;&quot;
+	Print #1, &quot;    orphans: &quot; &amp; getPrefValue (&quot;Orphans&quot;) &amp; &quot;;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;p+p&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; text-indent:1.5em;&quot;
-	Print #1, &quot; line-height: 1em;&quot;
-&apos;	Print #1, &quot; text-align: justify;&quot;
-&apos;	Print #1, &quot; font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    text-indent:1.5em;&quot;
+	Print #1, &quot;    line-height: 1em;&quot;
+&apos;	Print #1, &quot;    text-align: justify;&quot;
+&apos;	Print #1, &quot;    font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;a&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; color:#000000;&quot;
-	Print #1, &quot; text-decoration:underline;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    color:#000000;&quot;
+	Print #1, &quot;    text-decoration:underline;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;h1&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:4em;&quot;
-	Print #1, &quot; margin-bottom:2em;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1.2) &amp; &quot;em;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:4em;&quot;
+	Print #1, &quot;    margin-bottom:2em;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(1.2) &amp; &quot;em;&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;h2&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:3em;&quot;
-	Print #1, &quot; margin-right:0em;&quot;
-	Print #1, &quot; margin-bottom:2em;&quot;
-	Print #1, &quot; margin-left:0em;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1.1) &amp; &quot;em;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:3em;&quot;
+	Print #1, &quot;    margin-right:0em;&quot;
+	Print #1, &quot;    margin-bottom:2em;&quot;
+	Print #1, &quot;    margin-left:0em;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(1.1) &amp; &quot;em;&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;h3&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:2em;&quot;
-	Print #1, &quot; margin-bottom:2em;&quot;
-	Print #1, &quot; line-height:normal;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:2em;&quot;
+	Print #1, &quot;    margin-bottom:2em;&quot;
+	Print #1, &quot;    line-height:normal;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;h4&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:2em;&quot;
-	Print #1, &quot; margin-bottom:2em;&quot;
-	Print #1, &quot; line-height:normal;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:2em;&quot;
+	Print #1, &quot;    margin-bottom:2em;&quot;
+	Print #1, &quot;    line-height:normal;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;h5&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:2em;&quot;
-	Print #1, &quot; margin-bottom:2em;&quot;
-	Print #1, &quot; line-height:normal;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:2em;&quot;
+	Print #1, &quot;    margin-bottom:2em;&quot;
+	Print #1, &quot;    line-height:normal;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;h6&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:2em;&quot;
-	Print #1, &quot; margin-bottom:2em;&quot;
-	Print #1, &quot; line-height:normal;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:2em;&quot;
+	Print #1, &quot;    margin-bottom:2em;&quot;
+	Print #1, &quot;    line-height:normal;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.title&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:2em;&quot;
-	Print #1, &quot; margin-bottom:1.5em;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1.5) &amp; &quot;em;&quot;	
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:2em;&quot;
+	Print #1, &quot;    margin-bottom:1.5em;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(1.5) &amp; &quot;em;&quot;	
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.subtitle&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:2em;&quot;
-	Print #1, &quot; margin-bottom:1.5em;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;	
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top:2em;&quot;
+	Print #1, &quot;    margin-bottom:1.5em;&quot;
+	Print #1, &quot;    page-break-after:avoid;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;	
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.footnote&quot;
-	Print #1, &quot;{&quot;
+	Print #1, &quot;    {&quot;
 	
-&apos;	Print #1, &quot; margin-left: 15%;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
-	Print #1, &quot; margin-left:1em;&quot;
-	Print #1, &quot; text-indent:-1.5em;&quot;	
-	Print #1, &quot; text-align: justify;&quot;
+&apos;	Print #1, &quot;    margin-left: 15%;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
+	Print #1, &quot;    margin-left:1em;&quot;
+	Print #1, &quot;    text-indent:-1.5em;&quot;	
+	Print #1, &quot;    text-align: justify;&quot;
 	If getPrefValue(&quot;GroupNotes&quot;) &lt;&gt; 1 Then
-		Print #1, &quot; page-break-before: always;&quot;
-		Print #1, &quot; border-top: 0.5px;&quot;
-		Print #1, &quot; border-top-style: solid;&quot;
-		Print #1, &quot; border-top-color: black;&quot;
-		Print #1, &quot; padding-top:1em;&quot;
-		Print #1, &quot; width: 60%;&quot;
+		Print #1, &quot;    page-break-before: always;&quot;
+		Print #1, &quot;    border-top: 0.5px;&quot;
+		Print #1, &quot;    border-top-style: solid;&quot;
+		Print #1, &quot;    border-top-color: black;&quot;
+		Print #1, &quot;    padding-top:1em;&quot;
+	    Print #1, &quot;    width: 60%;&quot;
 	End If
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.quotations&quot;
-	Print #1, &quot;{&quot;
-&apos;	Print #1, &quot; margin-top:1em;&quot;
-&apos;	Print #1, &quot; margin-bottom:1em;&quot;
-	Print #1, &quot; margin-left:2.5em;&quot;
-	Print #1, &quot; margin-right:1em;&quot;
-	Print #1, &quot; text-indent:-1em;&quot;
-	Print #1, &quot; text-align: left;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+&apos;	Print #1, &quot;    margin-top:1em;&quot;
+&apos;	Print #1, &quot;    margin-bottom:1em;&quot;
+	Print #1, &quot;    margin-left:2.5em;&quot;
+	Print #1, &quot;    margin-right:1em;&quot;
+	Print #1, &quot;    text-indent:-1em;&quot;
+	Print #1, &quot;    text-align: left;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.marginalia&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
-	Print #1, &quot; margin-top:1em;&quot;
-	Print #1, &quot; margin-bottom:1em;&quot;
-	Print #1, &quot; margin-left:35%;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot; text-align: justify;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(0.9) &amp; &quot;em;&quot;
+	Print #1, &quot;    margin-top:1em;&quot;
+	Print #1, &quot;    margin-bottom:1em;&quot;
+	Print #1, &quot;    margin-left:35%;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    text-align: justify;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.noindent&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin:0pt;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot; text-align: justify;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin:0pt;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    text-align: justify;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.illustration&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin:0pt;&quot;
-	Print #1, &quot; margin-bottom:2em;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(0.8) &amp; &quot;em;&quot;
-	Print #1, &quot; font-style:oblique;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin:0pt;&quot;
+	Print #1, &quot;    margin-bottom:2em;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(0.8) &amp; &quot;em;&quot;
+	Print #1, &quot;    font-style:oblique;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.left&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; text-align: left;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    text-align: left;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.center&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    text-align: center;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.right&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; text-align: right;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    text-align: right;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.bold&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; font-weight: bold;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    font-weight: bold;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.italic&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; font-style: italic;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    font-style: italic;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.underline&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; text-decoration:underline;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    text-decoration:underline;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.caption&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top:1em;&quot;
-	Print #1, &quot; margin-right:0em;&quot;
-	Print #1, &quot; margin-bottom:0.3em;&quot;
-	Print #1, &quot; margin-left:0em;&quot;
-	Print #1, &quot; page-break-after:avoid;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
-	Print #1, &quot; font-weight: bold;&quot;
-	Print #1, &quot; text-align: center;&quot;
-	Print #1, &quot; color:#000000;&quot;
-	Print #1, &quot;}&quot;
-	Print #1, &quot;.dropcap&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot;	float: left;&quot;
-	Print #1, &quot;	font-size: 4.7em;&quot;
-	Print #1, &quot;	line-height: 0.8em;&quot;
-	Print #1, &quot;	margin-right: 3pt;&quot;
-	Print #1, &quot;	margin-bottom: -0.1em;&quot;
-	Print #1, &quot;}&quot;
+    Print #1, &quot;    {&quot;
+    Print #1, &quot;    margin-top:1em;&quot;
+    Print #1, &quot;    margin-right:0em;&quot;
+    Print #1, &quot;    margin-bottom:0.3em;&quot;
+    Print #1, &quot;    margin-left:0em;&quot;
+    Print #1, &quot;    page-break-after:avoid;&quot;
+    Print #1, &quot;    font-size:&quot; &amp; FD(1) &amp; &quot;em;&quot;
+    Print #1, &quot;    font-style: italic;&quot;
+    Print #1, &quot;    text-align: center;&quot;
+    Print #1, &quot;    color:#000000;&quot;
+    Print #1, &quot;    }&quot;
+    Print #1, &quot;.dropcap&quot;
+	Print #1, &quot;		{&quot;
+	Print #1, &quot;		float: left;&quot;
+	Print #1, &quot;		font-size: 4.7em;&quot;
+	Print #1, &quot;		line-height: 0.8em;&quot;
+	Print #1, &quot;		margin-right: 3pt;&quot;
+	Print #1, &quot;		margin-bottom: -0.1em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;img&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; max-width:100%;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    max-width:100%;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.floatleft&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; float:left;&quot;
-	Print #1, &quot; margin: 0.5em;&quot;
-	Print #1, &quot; padding: 2px;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    float:left;&quot;
+	Print #1, &quot;    margin: 0.5em;&quot;
+	Print #1, &quot;    padding: 2px;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.floatright&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; float:right;&quot;
-	Print #1, &quot; margin: 0.5em;&quot;
-	Print #1, &quot; padding: 2px;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    float:right;&quot;
+	Print #1, &quot;    margin: 0.5em;&quot;
+	Print #1, &quot;    padding: 2px;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.bordertop&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; border-top: 0.75pt solid black&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+    Print #1, &quot;    border-top: 0.75pt solid black&quot;
+    Print #1, &quot;    }&quot;
 	Print #1, &quot;.listnumbers&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: decimal;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: decimal;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.listlowercase&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: lower-latin;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: lower-latin;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.listcapitals&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: upper-latin;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: upper-latin;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.listroman&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: upper-roman;&quot;
-	Print #1, &quot;}&quot;	
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: upper-roman;&quot;
+	Print #1, &quot;    }&quot;	
 	Print #1, &quot;.listromanl&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: lower-roman;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: lower-roman;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.listcircle&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: circle;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: circle;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.listdisc&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: disc;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: disc;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.listsquare&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; display: block;&quot;
-	Print #1, &quot; list-style-type: square;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    display: block;&quot;
+    Print #1, &quot;    list-style-type: square;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.index1&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin-top: 0.5em;&quot;
-	Print #1, &quot; text-indent: 2em;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin-top: 0.5em;&quot;
+	Print #1, &quot;    text-indent: 2em;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.index2&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; text-indent: 3em;&quot;
-	Print #1, &quot; font-style: italic;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    text-indent: 3em;&quot;
+	Print #1, &quot;    font-style: italic;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;.index3, .index4, .index5, .index6&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; text-indent: 4em;&quot;
-	Print #1, &quot; font-style: italic;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    text-indent: 4em;&quot;
+	Print #1, &quot;    font-style: italic;&quot;
+	Print #1, &quot;    }&quot;
 	Print #1, &quot;pre&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; margin:0pt;&quot;
-	Print #1, &quot; font-family:monospace;&quot;
-	Print #1, &quot; text-indent:0em;&quot;
-	Print #1, &quot; text-align: left;&quot;
-	Print #1, &quot; font-size:&quot; &amp; FD(0.8) &amp; &quot;em;&quot;
-	Print #1, &quot; white-space: pre-wrap;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    margin:0pt;&quot;
+	Print #1, &quot;    font-family:monospace;&quot;
+	Print #1, &quot;    text-indent:0em;&quot;
+	Print #1, &quot;    text-align: left;&quot;
+	Print #1, &quot;    font-size:&quot; &amp; FD(0.8) &amp; &quot;em;&quot;
+	Print #1, &quot;    white-space: pre-wrap;&quot;
+	Print #1, &quot;    }&quot;
 &apos;	Print #1, &quot;code&quot;
-&apos;	Print #1, &quot;{&quot;
-&apos;	Print #1, &quot; margin:1em;&quot;
-&apos;	Print #1, &quot; font-family:monospace;&quot;
-&apos;	Print #1, &quot; text-indent:0em;&quot;
-&apos;	Print #1, &quot; text-align: left;&quot;
-&apos;	Print #1, &quot; font-size:&quot; &amp; FD(0.8) &amp; &quot;em;&quot;
-&apos;	Print #1, &quot;}&quot;
+&apos;	Print #1, &quot;    {&quot;
+&apos;	Print #1, &quot;    margin:1em;&quot;
+&apos;	Print #1, &quot;    font-family:monospace;&quot;
+&apos;	Print #1, &quot;    text-indent:0em;&quot;
+&apos;	Print #1, &quot;    text-align: left;&quot;
+&apos;	Print #1, &quot;    font-size:&quot; &amp; FD(0.8) &amp; &quot;em;&quot;
+&apos;	Print #1, &quot;    }&quot;
 	Print #1, &quot;img.cover&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; height: 100%;&quot;
-&apos;	Print #1, &quot; max-width: 100%&quot;
-	Print #1, &quot;}&quot;
-	Print #1, &quot;table&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; cellpadding: 1px;&quot;
-	Print #1, &quot; cellspacing: 2px;&quot;
-	Print #1, &quot; rules:all;&quot;
-	Print #1, &quot; display: inline-table;&quot;
-	Print #1, &quot; border-collapse:collapse;&quot;
-	Print #1, &quot; margin-left:0px;&quot;
-	Print #1, &quot; margin-right:0px;&quot;
-	Print #1, &quot;}&quot;
-	Print #1, &quot;tr&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot;}&quot;
-	Print #1, &quot;td&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; border:1px solid black;&quot;
-	Print #1, &quot;}&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    height: 100%;&quot;
+&apos;	Print #1, &quot;    max-width: 100%&quot;
+	Print #1, &quot;    }&quot;
+    Print #1, &quot;table&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    cellpadding: 1px;&quot;
+	Print #1, &quot;    cellspacing: 2px;&quot;
+	Print #1, &quot;    rules:all;&quot;
+	Print #1, &quot;    display: inline-table;&quot;
+	Print #1, &quot;    border-collapse:collapse;&quot;
+	Print #1, &quot;    margin-left:0px;&quot;
+	Print #1, &quot;    margin-right:0px;&quot;
+    Print #1, &quot;    }&quot;
+    Print #1, &quot;tr&quot;
+	Print #1, &quot;    {&quot;
+    Print #1, &quot;    }&quot;
+    Print #1, &quot;td&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    border:1px solid black;&quot;
+    Print #1, &quot;    }&quot;
 	Print #1, &quot;&quot;
 	Print #1, &quot;/*======== image rules ========*/&quot;
 	Print #1, &quot;&quot;
@@ -383,85 +372,85 @@ Sub CreateCSSFile (MyEpub As string)
 		For i=1 to UBound(StyleList) &apos;Adding the personal styles
 			If StyleList(i).ParaStyleName = &quot;&quot; Then Exit For
 			Print #1, &quot;.&quot; &amp; StyleList(i).ParaStyleName
-			Print #1, &quot;{&quot;
-			Print #1, &quot; font-size:&quot; &amp; FD(StyleList(i).CharHeight / 12) &amp; &quot;em;&quot;
-			Print #1, &quot; text-indent:&quot; &amp; mil2em(StyleList(i).ParaFirstLineIndent) &amp; &quot;em;&quot;
+			Print #1, &quot;    {&quot;
+			Print #1, &quot;    font-size:&quot; &amp; FD(StyleList(i).CharHeight / 12) &amp; &quot;em;&quot;
+			Print #1, &quot;    text-indent:&quot; &amp; mil2em(StyleList(i).ParaFirstLineIndent) &amp; &quot;em;&quot;
 			Select Case StyleList(i).ParaAdjust
 	&apos;			Case 0
-	&apos;				Print #1, &quot; text-align: left;&quot;
+	&apos;				Print #1, &quot;    text-align: left;&quot;
 				Case 1
-					Print #1, &quot; text-align: right;&quot;
+					Print #1, &quot;    text-align: right;&quot;
 				Case 2
-					Print #1, &quot; text-align: justify;&quot;
+					Print #1, &quot;    text-align: justify;&quot;
 				Case 3
-					Print #1, &quot; text-align: center;&quot;
+					Print #1, &quot;    text-align: center;&quot;
 				Case Else
-	&apos;				Print #1, &quot; text-align: left;&quot;
+	&apos;				Print #1, &quot;    text-align: left;&quot;
 			End Select
 			If StyleList(i).CharColor &lt;&gt; -1 Then
-				Print #1, &quot; color:#&quot; &amp; myHex(StyleList(i).CharColor) &amp; &quot;;&quot;
+				Print #1, &quot;    color:#&quot; &amp; myHex(StyleList(i).CharColor) &amp; &quot;;&quot;
 			End If
 
 			If StyleList(i).CharPosture &gt; 0 Then
-				Print #1, &quot; font-style: italic;&quot;
+				Print #1, &quot;    font-style: italic;&quot;
 			End If
 			
 			If StyleList(i).CharWeight &gt; 105 Then
-				Print #1, &quot; font-weight: bold;&quot;
+				Print #1, &quot;    font-weight: bold;&quot;
 			End If
 			
 &apos;			If StyleList(i).ParaKeepTogether = True Then
-&apos;				Print #1, &quot; page-break-after: avoid;&quot;
+&apos;				Print #1, &quot;    page-break-after: avoid;&quot;
 &apos;			End If
 			
 	&apos;		If StyleList(i).DropCapFormatCount &lt;&gt; 0 Then
-	&apos;			Print #1, &quot; background-color:#&quot; &amp; DropCapFormatCount &amp; &quot;;&quot;
-	&apos;			Print #1, &quot; background-color:#&quot; &amp; DropCapFormatDistance &amp; &quot;;&quot;
-	&apos;			Print #1, &quot; background-color:#&quot; &amp; DropCapFormatLines &amp; &quot;;&quot;
+	&apos;			Print #1, &quot;    background-color:#&quot; &amp; DropCapFormatCount &amp; &quot;;&quot;
+	&apos;			Print #1, &quot;    background-color:#&quot; &amp; DropCapFormatDistance &amp; &quot;;&quot;
+	&apos;			Print #1, &quot;    background-color:#&quot; &amp; DropCapFormatLines &amp; &quot;;&quot;
 	&apos;		End If
 				
 			If StyleList(i).ParaBackColor &lt;&gt; -1 Then
-				Print #1, &quot; background-color:#&quot; &amp; myHex(StyleList(i).ParaBackColor) &amp; &quot;;&quot;
+				Print #1, &quot;    background-color:#&quot; &amp; myHex(StyleList(i).ParaBackColor) &amp; &quot;;&quot;
 			End If
 			If StyleList(i).ParaLeftMargin &lt;&gt; 0 Then
-				Print #1, &quot; margin-left:&quot; &amp; mil2em(StyleList(i).ParaLeftMargin) &amp; &quot;em;&quot;
+				Print #1, &quot;    margin-left:&quot; &amp; mil2em(StyleList(i).ParaLeftMargin) &amp; &quot;em;&quot;
 			End If
 			If StyleList(i).ParaRightMargin &lt;&gt; 0 Then
-				Print #1, &quot; margin-right:&quot; &amp; mil2em(StyleList(i).ParaRightMargin) &amp; &quot;em;&quot;
+				Print #1, &quot;    margin-right:&quot; &amp; mil2em(StyleList(i).ParaRightMargin) &amp; &quot;em;&quot;
 			End If
 			If StyleList(i).ParaTopMargin &lt;&gt; 0 Then
-				Print #1, &quot; margin-top:&quot; &amp; mil2em(StyleList(i).ParaTopMargin) &amp; &quot;em;&quot;
+				Print #1, &quot;    margin-top:&quot; &amp; mil2em(StyleList(i).ParaTopMargin) &amp; &quot;em;&quot;
 			End If
 			If StyleList(i).ParaBottomMargin &lt;&gt; 0 Then
-				Print #1, &quot; margin-bottom:&quot; &amp; mil2em(StyleList(i).ParaBottomMargin) &amp; &quot;em;&quot;
+				Print #1, &quot;    margin-bottom:&quot; &amp; mil2em(StyleList(i).ParaBottomMargin) &amp; &quot;em;&quot;
 			End If
 			If StyleList(i).LeftBorder &lt;&gt; 0 Then
-				Print #1, &quot; border-left:&quot; &amp; myDec(StyleList(i).LeftBorder) &amp; &quot;pt solid;&quot;
+				Print #1, &quot;    border-left:&quot; &amp; myDec(StyleList(i).LeftBorder) &amp; &quot;pt solid;&quot;
 			End If
 			If StyleList(i).RightBorder &lt;&gt; 0 Then
-				Print #1, &quot; border-right:&quot; &amp; myDec(StyleList(i).RightBorder) &amp; &quot;pt solid;&quot;
+				Print #1, &quot;    border-right:&quot; &amp; myDec(StyleList(i).RightBorder) &amp; &quot;pt solid;&quot;
 			End If
 			If StyleList(i).TopBorder &lt;&gt; 0 Then
-				Print #1, &quot; border-top:&quot; &amp; myDec(StyleList(i).TopBorder) &amp; &quot;pt solid;&quot;
+				Print #1, &quot;    border-top:&quot; &amp; myDec(StyleList(i).TopBorder) &amp; &quot;pt solid;&quot;
 			End If
 			If StyleList(i).BottomBorder &lt;&gt; 0 Then
-				Print #1, &quot; border-bottom:&quot; &amp; myDec(StyleList(i).BottomBorder) &amp; &quot;pt solid;&quot;
+				Print #1, &quot;    border-bottom:&quot; &amp; myDec(StyleList(i).BottomBorder) &amp; &quot;pt solid;&quot;
 			End If
-			Print #1, &quot;}&quot;
+			Print #1, &quot;    }&quot;
 		Next i
 		Print #1, &quot;&quot;
 		Print #1, &quot;/* End personal styles */&quot;
 	End If
 	Print #1, &quot;&quot;
-	Print #1, &quot;.break&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; page-break-before: always;&quot;
-	Print #1, &quot;}&quot;
-	Print #1, &quot;hr&quot;
-	Print #1, &quot;{&quot;
-	Print #1, &quot; width: 70%;&quot;
-	Print #1, &quot; margin-left: 15%;&quot;
-	Print #1, &quot;}&quot;
+    Print #1, &quot;.break&quot;
+	Print #1, &quot;    {&quot;
+	Print #1, &quot;    	page-break-before: always;&quot;
+	Print #1, &quot;    }&quot;
+    Print #1, &quot;hr&quot;
+	Print #1, &quot;    {&quot;
+    Print #1, &quot;    width: 70%;&quot;
+	Print #1, &quot;    margin-left: 15%;&quot;
+    Print #1, &quot;    }&quot;
 	Print #1, &quot;span.normal {font-style: normal;}&quot;
 	Print #1, &quot;span.linethrough {text-decoration: line-through}&quot;
 	Print #1, &quot;span.underline {text-decoration: underline}&quot;
