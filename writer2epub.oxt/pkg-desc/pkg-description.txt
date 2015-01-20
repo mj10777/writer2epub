@@ -1,0 +1,7 @@
+Writer2ePub
+Copyright (c) 2010/2011  By Luca "Luke" Calcinai.
+http://writer2epub.it
+User manual:
+http://writer2epub.it
+For support and feedback: 
+writer2epub@gmail.com

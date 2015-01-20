@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="MobiDLG" dlg:left="141" dlg:top="60" dlg:width="176" dlg:height="112" dlg:help-text="&amp;884.MobiDLG.HelpText" dlg:closeable="true" dlg:moveable="true" dlg:title="&amp;885.MobiDLG.Title">
+ <dlg:bulletinboard>
+  <dlg:text dlg:id="Label1" dlg:tab-index="0" dlg:left="2" dlg:top="7" dlg:width="173" dlg:height="27" dlg:help-text="&amp;898.MobiDLG.Label1.HelpText" dlg:value="&amp;899.MobiDLG.Label1.Label" dlg:multiline="true"/>
+  <dlg:text dlg:id="Label2" dlg:tab-index="1" dlg:left="2" dlg:top="42" dlg:width="170" dlg:height="22" dlg:help-text="&amp;902.MobiDLG.Label2.HelpText" dlg:value="&amp;903.MobiDLG.Label2.Label" dlg:multiline="true"/>
+ </dlg:bulletinboard>
+</dlg:window>

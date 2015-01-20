@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE library:library PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "library.dtd">
+<library:library xmlns:library="http://openoffice.org/2000/library" library:name="writer2epub" library:readonly="false" library:passwordprotected="false">
+ <library:element library:name="MetaDLG"/>
+ <library:element library:name="PrefDLG"/>
+ <library:element library:name="EndDLG"/>
+ <library:element library:name="ColorDLG"/>
+ <library:element library:name="LocalizeDLG"/>
+ <library:element library:name="MobiDLG"/>
+ <library:element library:name="WrongPictDLG"/>
+ <library:element library:name="BigPictDLG"/>
+</library:library>

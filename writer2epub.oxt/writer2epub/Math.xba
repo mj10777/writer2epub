@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Math" script:language="StarBasic">REM  *****  BASIC  *****
+
+Function MathHandler (myFormula As Object)
+
+	Dim oDrawDoc, oShape as Object
+	Dim mDrawArgs (0) as new com.sun.star.beans.PropertyValue
+	Dim FormulaName as String
+	Static FormulaNumber, iWidth, iHeight as Integer	
+
+	FormulaNumber = FormulaNumber + 1
+	FormulaName = &quot;Formula&quot; &amp; Format(FormulaNumber,&quot;0000&quot;) &amp; &quot;.png&quot;
+	
+	mDrawArgs(0).Name  =&quot;Hidden&quot;
+	mDrawArgs(0).Value = True	
+
+	oDrawDoc = StarDesktop.LoadComponentFromUrl(&quot;private:factory/sdraw&quot;,&quot;_blank&quot;, 0, mDrawArgs())
+	oShape = oDrawDoc.createInstance(&quot;com.sun.star.drawing.OLE2Shape&quot;)
+	oShape.CLSID = &quot;078B7ABA-54FC-457F-8551-6147e776a997&quot;
+	
+	oDrawDoc.DrawPages(0).Add(oShape)
+
+	oShape.Model.Formula = myFormula.Model.formula
+	oShape.Fillcolor = RGB (255,255,255)				&apos;workaround to force white background and line in the exported png
+	oShape.Linecolor = RGB (255,255,255)	
+	iWidth = myFormula.Size.Width\10
+	iHeight = myFormula.Size.Height\10
+	sFileUrl = MyEpubFolder &amp; &quot;/images/&quot; &amp; FormulaName
+	ExportShapeToPNG (oShape, sFileUrl, iWidth, iHeight)
+	oDrawDoc.close(true)
+	sRelH =  Str(myFormula.height / 300)
+	MathHandler = 	&quot;&lt;img src=&quot;&quot;../images/&quot; &amp; FormulaName &amp; &quot;&quot;&quot; style=&quot;&quot;height:&quot; &amp; sRelH &amp; &quot;em; vertical-align:middle;&quot;&quot; alt=&quot;&quot;&quot; &amp; FormulaName &amp; &quot;&quot;&quot; /&gt;&quot;
+	
+End Function
+
+Sub ExportShapeToPNG(oShape As Any, sFileUrl As String, iWidth As Integer, iHeight As Integer)
+
+&apos; cfr.: http://www.oooforum.org/forum/viewtopic.phtml?t=51021
+	Dim aFilterData (5) As new com.sun.star.beans.PropertyValue 
+	Dim aArgs (2) As new com.sun.star.beans.PropertyValue
+	myLog = myLog &amp; CR &amp; &quot;  ✔ Start ExportShapeToPNG&quot; &apos; &amp; CR &amp; &quot;   (&quot; &amp; sFileUrl &amp; &quot;)&quot;
+	
+	&apos;filter data for the image/png MediaType 
+	aFilterData(0).Name  = &quot;PixelWidth&quot;        &apos;
+	aFilterData(0).Value = iWidth
+	aFilterData(1).Name  = &quot;PixelHeight&quot;
+	aFilterData(1).Value = iHeight
+	aFilterData(2).Name  =&quot;Compression&quot; 
+	aFilterData(2).Value = 9 
+	aFilterData(3).Name  =&quot;Interlaced&quot; 
+	aFilterData(3).Value = 0 
+	aFilterData(4).Name  = &quot;LogicalWidth&quot;
+	aFilterData(4).Value = 200	&apos;LogicalWidth:  integer, only usable with ExportMode Size, only influences the DPI header.
+	aFilterData(5).Name  = &quot;LogicalHeight&quot;
+	aFilterData(5).Value = 200	&apos;LogicalHeight: integer, only usable with ExportMode Size, only influences the DPI header. 
+		
+	&apos;export filter data
+	aArgs(0).Name  = &quot;MediaType&quot;
+	aArgs(0).Value = &quot;image/png&quot;
+	aArgs(1).Name  = &quot;URL&quot;
+	aArgs(1).Value = sFileUrl
+	aArgs(2).Name  = &quot;FilterData&quot;
+	aArgs(2).Value = aFilterData()
+	
+	xExporter = createUnoService( &quot;com.sun.star.drawing.GraphicExportFilter&quot; )
+	xExporter.setSourceDocument( oShape )
+	
+	xExporter.filter(aArgs())
+	myLog = myLog &amp; CR &amp; &quot;  ✔ End&quot;	
+
+End Sub
+</script:module>

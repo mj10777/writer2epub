@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE library:library PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "library.dtd">
+<library:library xmlns:library="http://openoffice.org/2000/library" library:name="writer2epub" library:readonly="false" library:passwordprotected="false">
+ <library:element library:name="CSS"/>
+ <library:element library:name="UUID"/>
+ <library:element library:name="ZIP"/>
+ <library:element library:name="Functions"/>
+ <library:element library:name="A_main"/>
+ <library:element library:name="Graphics"/>
+ <library:element library:name="Traverse"/>
+ <library:element library:name="Meta"/>
+ <library:element library:name="Localize"/>
+ <library:element library:name="CJKV"/>
+ <library:element library:name="Prefs"/>
+ <library:element library:name="DocCheck"/>
+ <library:element library:name="Fonts"/>
+ <library:element library:name="myBasic"/>
+ <library:element library:name="Math"/>
+</library:library>

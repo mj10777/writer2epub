@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="CJKV" script:language="StarBasic">&apos;++ kisi
+&apos;
+&apos; CJKV China Japan Korea Vietnam
+&apos;
+&apos;---- Japanese text handling was developed by kisi.
+&apos;---- Please email me about any bug:
+&apos;---- kisi-kazutaka@nifty.com
+
+REM  *****  BASIC  *****
+
+Sub ChangeWriting(MyEpub As String)
+  Const kPOINT          As Double = 127 / 360
+  Const kPX             As Double = 96 / 72
+  Const kRUBYSIZE       As Double =  6 / 14
+  Const kFRAC         As String = &quot;0.00&quot;
+  Dim oPageStyle        As Object
+  Dim PageWidth         As Double
+  Dim PageHeight        As Double
+  Dim Width             As Double
+  Dim Height            As Double
+  Dim LeftMargin        As Double
+  Dim TopMargin         As Double
+  Dim CharFontName      As String
+  Dim CharFontNameAsian As String
+  Dim CharHeight        As Double
+  Dim CharHeightAsian   As Double
+  Dim BaseFontHeight    As Double
+  Dim RubyFontHeight    As Double
+  Dim GridBaseWidth     As Double
+  Dim GridBaseHeight    As Double
+  Dim GridRubyHeight    As Double
+  Dim CharactersPerLine As Integer
+  Dim GridLines         As Integer
+  Dim WidthPerAGrid     As Double
+  Dim HeightPerAGrid    As Double
+  Dim oParEnum As Object
+  Dim oPar     As Object
+  oParEnum = oDoc.getText().createEnumeration()
+  If oParEnum.hasMoreElements() Then
+    oPar = oParEnum.nextElement()
+  Else
+    MsgBox &quot;No Paragraph&quot;
+    Exit Sub
+  End If
+  oPageStyle        = oDoc.StyleFamilies.getByName(&quot;PageStyles&quot;).getByName(&quot;Standard&quot;)
+  PageWidth         = ( oPageStyle.Size.Width / 100 / kPOINT * kPX )
+  PageHeight        = oPageStyle.Size.Height / 100 / kPOINT * kPX
+  Width             = ( oPageStyle.Size.Width - oPageStyle.LeftMargin - oPageStyle.RightMargin ) / 100 / kPOINT * kPX
+  Height            = ( oPageStyle.Size.Height - oPageStyle.TopMargin - oPageStyle.BottomMargin ) / 100 / kPOINT * kPX
+  LeftMargin        = oPageStyle.LeftMargin / 100 / kPOINT * kPX
+  TopMargin         = oPageStyle.TopMargin / 100 / kPOINT * kPX
+  CharFontName      = oPar.CharFontName
+  CharFontNameAsian = oPar.CharFontNameAsian
+  CharHeight        = oPar.CharHeight
+  CharHeightAsian   = oPar.CharHeightAsian
+  BaseFontHeight    = CharHeightAsian
+  RubyFontHeight    = BaseFontHeight * kRUBYSIZE
+  GridBaseWidth     = oPageStyle.GridBaseWidth / 100 / kPOINT * kPX
+  GridBaseHeight    = oPageStyle.GridBaseHeight / 100 / kPOINT * kPX
+  GridRubyHeight    = oPageStyle.GridRubyHeight / 100 / kPOINT * kPX
+  CharactersPerLine = CInt( Height / GridBaseHeight )
+  GridLines         = oPageStyle.GridLines
+  WidthPerAGrid     = Width / GridLines
+  HeightPerAGrid    = Height / CharactersPerLine
+  Dim contentXhtmls(1000) As String
+  Dim iContentNumber      As Integer  &apos;---- Sequential number of contentxxxx.xhtml files
+  iContentNumber = 0
+  Dim iTocNumber          As Integer  &apos;---- Sequential number of contentxxxx.xhtml included heading
+  iTocNumber     = 0
+  Dim iContentNumbers     As Integer
+  Dim iSVGNumber          As Integer  &apos;---- Sequential number of xxxx.xhtml files
+  iSVGNumber = 0
+  Dim iSVGNumbers         As Integer
+  Dim rb(400) As Integer  &apos;---- number of characters of base text
+  Dim rt(400) As String   &apos;---- string of ruby text
+  Dim rx(400) As Double   &apos;---- x-coordinate of top of base text
+  Dim ry(400) As Double   &apos;---- y-coordinate of top of base text
+  Dim rz(400) As Boolean  &apos;---- TRUE: to next line FLASE: no break line
+  Dim r       As Integer  &apos;---- index
+  Const ShowGrid As Boolean = FALSE
+  Dim pos   As Integer  &apos;---- current position
+  Dim elem  As String   &apos;---- current element
+  Dim att   As String   &apos;---- current attribute
+  Dim eType As String
+  Dim char  As String   &apos;---- any character in a paragraph
+  Dim w     As Integer
+  Dim h     As Double
+  Dim x, y  As Double
+  Dim loopBreak As Boolean
+  &apos;---- ASCII
+  Const ASCIIs As String = &quot; 0123456789+-*/=.,:;[]{}|~abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;
+  Dim ascii As Boolean
+  &apos;---- permit at last of a line
+  Const END_BRACKETS_H As String = &quot;」』）〉】》｝］…—&quot;  &apos;---- horizontal characters
+  Const END_BRACKETS_V As String = &quot;﹂﹄︶﹀︼︾︸﹈︙︱&quot;  &apos;---- vertical characters
+  &apos;---- inhibit at last of a line
+  Const BEGIN_BRACKETS_H As String = &quot;「『（〈【《｛［&quot;    &apos;---- horizontal characters
+  Const BEGIN_BRACKETS_V As String = &quot;﹁﹃︵︿︻︽︷﹇&quot;    &apos;---- vertical characters
+  Dim p0       As Integer
+  Dim p1       As Integer
+  Dim p2       As Integer
+  Dim sParas   As String
+  &apos;---- get contentxxxx.xhtml
+  Dim NextFile            As String
+  NextFile = Dir(MyEpubFolder &amp; &quot;/text/&quot;, 0)
+  While NextFile &lt;&gt; &quot;&quot;
+    If Right(NextFile, 5) = &quot;xhtml&quot; Then
+      contentXhtmls(iContentNumber) = NextFile
+      iContentNumber = iContentNumber + 1
+    End If
+    NextFile = Dir
+  WEnd
+  iContentNumbers = iContentNumber - 1
+  &apos;---- change contentxxxx.xhtml to xxxx.xhtml
+  For iContentNumber = 0 To iContentNumbers
+    Dim oInputAccess  As Object
+    Dim oInputStream  As Object
+    Dim vInputData    As Variant
+    oInputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+    oInputStream = CreateUnoService(&quot;com.sun.star.io.TextInputStream&quot;)
+    vInputData  = oInputAccess.openFileRead(MyEpubFolder &amp; &quot;/text/&quot; &amp; contentXhtmls(iContentNumber))
+    oInputStream.setInputStream(vInputData)
+    oInputStream.setEncoding(&quot;UTF-8&quot;)
+    Dim sLine    As String
+    sParas  = &quot;&quot;
+    Do While Not oInputStream.isEOF()
+      sLine = oInputStream.readLine()
+      If Len(sLine) &gt; 0 Then
+        If Len(sParas) &gt; 65535 Then
+          MsgBox &quot;Process was aborted because text characters exceed 65535.&quot;
+          Exit Sub
+        End If
+        If     Left(sLine, 3) = &quot;&lt;p&gt;&quot; Then
+          sParas = sParas &amp; sLine
+       ElseIf Left(sLine, 2) = &quot;&lt;h&quot; Then
+          sParas = sParas &amp; sLine
+        ElseIf sLine = &quot;&lt;div class=&quot;&quot;center&quot;&quot;&gt;&quot; Then
+          sParas = sParas &amp; sLine
+        ElseIf sLine = &quot;&lt;div class=&quot;&quot;right&quot;&quot;&gt;&quot; Then
+          sParas = sParas &amp; sLine
+        ElseIf sLine = &quot;&lt;/div&gt;&quot; Then
+          sParas = sParas &amp; sLine
+        ElseIf InStr(sLine, &quot;&lt;img src=&quot;) &gt; 0 Then
+          MsgBox(&quot;writer2epub cannot treat the image yet when writing-mode is tb-rl.&quot;)
+        Else
+          &apos;---- skip the other tag
+        End If
+      End If
+    Loop
+    oInputStream.closeInput()
+    &apos;---- convert one xhtml(sParas) to more than one xhtml.
+    elem = &quot;&quot;
+    att  = &quot;&quot;
+    ascii = FALSE
+    r = -1
+    pos = 1
+    &apos;----
+    Dim oOutputAccess As Object
+    Dim oOutputStream As Object
+    Dim vOutputData   As Variant
+    oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+    oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+    iSVGNumber = iSVGNumber + 1
+    vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/text/&quot; &amp; Format(iSVGNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot; )
+    oOutputStream.setOutputStream(vOutputData)
+    oOutputStream.setEncoding(&quot;UTF-8&quot;)
+    oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xmlns:xml=&quot;&quot;http://www.w3.org/XML/1998/namespace&quot;&quot; xml:lang=&quot;&quot;ja&quot;&quot;&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;  &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot; /&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot;  &lt;title&gt;&quot; &amp; MetaTitle &amp; &quot; (&quot; &amp; iSVGNumber &amp; &quot;)&lt;/title&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
+    oOutputStream.writeString( &quot; &lt;body&gt;&quot; &amp; CR )
+    oBar.start(createSvgMSG, Len(sParas))  &apos;++++++++++
+    Do While pos &lt;= Len(sParas)
+      oBar.setValue(pos)  &apos;++++++++++
+      oOutputStream.writeString( &quot;  &lt;svg version=&quot;&quot;1.1&quot;&quot; xmlns=&quot;&quot;http://www.w3.org/2000/svg&quot;&quot; xmlns:xlink=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot; width=&quot;&quot;&quot; &amp; Format(PageWidth, kFRAC) &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Format(PageHeight, kFRAC) &amp; &quot;px&quot;&quot;&gt;&quot; &amp; CR )
+      If ShowGrid Then
+        oOutputStream.writeString( &quot;  &lt;rect stroke-width=&quot;&quot;1&quot;&quot; stroke=&quot;&quot;blue&quot;&quot; fill=&quot;&quot;none&quot;&quot; x=&quot;&quot;&quot; &amp; LeftMargin &amp; &quot;px&quot;&quot; y=&quot;&quot;&quot; &amp; TopMargin &amp; &quot;px&quot;&quot; width=&quot;&quot;&quot; &amp; Width &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Height &amp; &quot;px&quot;&quot; /&gt;&quot; &amp; CR )
+      End If
+      oOutputStream.writeString( &quot;  &lt;g font-family=&quot;&quot;&quot; &amp; CharFontNameAsian &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(CharHeightAsian, kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; CR )
+      If ShowGrid Then
+        x = LeftMargin + WidthPerAGrid * (GridLines - 1)
+        For w = 1 To GridLines
+          y = TopMargin
+          h = 1
+          Do Until h &gt; CharactersPerLine
+            oOutputStream.writeString( &quot;  &lt;rect stroke-width=&quot;&quot;1&quot;&quot; stroke=&quot;&quot;lime&quot;&quot; fill=&quot;&quot;none&quot;&quot; x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;px&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC)  &amp; &quot;px&quot;&quot; width=&quot;&quot;&quot; &amp; Format(HeightPerAGrid, kFRAC) &amp; &quot;px&quot;&quot; height=&quot;&quot;&quot; &amp; Format(HeightPerAGrid, kFRAC) &amp; &quot;px&quot;&quot; /&gt;&quot; &amp; CR )
+			y = y + HeightPerAGrid
+            h = h + 1
+          Loop
+          x = x - WidthPerAGrid
+        Next w
+      End If
+      loopBreak = FALSE
+      w = 1 
+      x = LeftMargin + WidthPerAGrid * (GridLines - 1)
+      
+      Do Until w &gt; GridLines
+        y = TopMargin + HeightPerAGrid
+        h = 1
+        Do While TRUE
+          If pos &gt;= Len(sParas) Then
+            loopBreak = TRUE
+            Exit Do
+          End If
+          &apos;---- ex.                                                                          page break
+          &apos;----    r        -1              0                                                   0
+          &apos;----            &lt;p&gt;大きな圓柱に&lt;ruby&gt;&lt;rb&gt;蟋蟀&lt;/rb&gt;&lt;rt&gt;きり〴〵す&lt;/rt&gt;&lt;/ruby&gt;が一匹 || とまってゐる。&lt;/p&gt;
+          &apos;----    eType    p + + + + + +  ruby  rb + +  /rb  rt + + + + +  /rt  /ruby + + +  || + + + + + + +  /p
+          &apos;----    char       大きな圓柱に          蟋蟀         きり〴〵す            が一匹 || とまってゐる。
+          &apos;----    elem       p p p p p p  r     b  b b       t  t t t t t  r    p     p p p  || p p p p p p p
+          char = NextChar(sParas, pos, eType)
+          Select Case eType
+            Case &quot;h01&quot;, &quot;h02&quot;, &quot;h03&quot;, &quot;h04&quot;, &quot;h05&quot;, &quot;h06&quot;, &quot;h07&quot;, &quot;h08&quot;, &quot;h09&quot;, &quot;h10&quot; :
+                                elem = &quot;p&quot;
+                                att = Right(eType, 2)
+                                iTocNumber = iTocNumber + 1
+                                sTOC(iTocNumber, 3) = iSVGNumber
+            Case &quot;/h1&quot;, &quot;/h2&quot;, &quot;/h3&quot;, &quot;/h4&quot;, &quot;/h5&quot;, &quot;/h6&quot;, &quot;/h7&quot;, &quot;/h8&quot;, &quot;/h9&quot;, &quot;/h10&quot; :
+                                elem = &quot;p&quot;
+                                att = &quot;&quot;
+                                Exit Do
+            Case &quot;div center&quot; : elem = &quot;p&quot;
+                                att = &quot;center&quot;
+
+            Case &quot;div right&quot;  : elem = &quot;p&quot;
+                                att = &quot;right&quot;
+            Case &quot;/div&quot;       : 
+            Case &quot;p&quot;          : elem = &quot;p&quot;
+                                att = &quot;&quot;
+                                              r = -1
+            Case &quot;/p&quot;         : elem = &quot;p&quot;
+                                att = &quot;&quot;
+                                              Exit Do
+            Case &quot;ruby&quot;       : elem = &quot;r&quot;
+                                att = &quot;&quot;
+                                              r = r + 1
+            Case &quot;/ruby&quot;      : elem = &quot;p&quot;
+                                att = &quot;&quot;
+            Case &quot;rb&quot;         : elem = &quot;b&quot;
+                                att = &quot;&quot;
+                                              rb(r) = 0
+                                              rx(r) = x
+                                              ry(r) = y
+                                              rz(r) = FALSE
+            Case &quot;/rb&quot;        : elem = &quot;t&quot;
+                                att = &quot;&quot;
+            Case &quot;rt&quot;         : elem = &quot;t&quot;
+                                att = &quot;&quot;
+                                              rt(r) = &quot;&quot;
+            Case &quot;/rt&quot;        : elem = &quot;r&quot;
+                                att = &quot;&quot;
+            Case Else         : 
+          End Select
+          &apos;---- paragraph, base text, heading text
+          If ( elem = &quot;p&quot; Or elem = &quot;b&quot; ) And (eType = &quot;+&quot; Or eType = &quot;-&quot;) Then
+            If Len(char) &gt; 0 Then
+              p0 = InStr(ASCIIs, char)
+              p1 = InStr(END_BRACKETS_H, char)
+              p2 = InStr(BEGIN_BRACKETS_H, char)
+              &apos;---- ASCII caharacter
+              If     p0 &gt; 0 Then
+                If h &lt;= CharactersPerLine Then
+                  If Not ascii Then
+                    y = y - (HeightPerAGrid / 2)
+                    ascii = TRUE
+                  End If
+                  oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(CharHeight, kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                  If eType = &quot;+&quot; Then
+                    pos = pos + 1
+                  End If
+                  If elem = &quot;b&quot; Then
+                    rb(r) = rb(r) + 1
+                  End If
+                  h = h + 0.5
+                  y = y + (HeightPerAGrid / 2)
+                Else
+                  Exit Do
+                End If
+              &apos;---- punctuation marks
+              ElseIf char = &quot;。&quot; Or char = &quot;、&quot; Or char = &quot;．&quot; Or char = &quot;，&quot; Then
+                Dim dx As Double
+                Dim dy As Double
+                dx = CharHeightAsian * 12 / 14
+                dy = -dx
+                oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; transform=&quot;&quot;translate(&quot; &amp; Format(dx, kFRAC) &amp; &quot;,&quot; &amp; Format(dy, kFRAC) &amp; &quot;)&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                If eType = &quot;+&quot; Then
+                  pos = pos + 1
+                End If
+                If elem = &quot;b&quot; Then
+                  rb(r) = rb(r) + 1
+                End If
+                If h &lt; CharactersPerLine + 1 Then
+                  h = h + 1
+                  y = y + HeightPerAGrid
+                Else
+                  Exit Do
+                End If
+              &apos;---- end bracket
+              ElseIf p1 &gt; 0 Then
+                oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(END_BRACKETS_V, p1, 1) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                If eType = &quot;+&quot; Then
+                  pos = pos + 1
+                End If
+                If elem = &quot;b&quot; Then
+                  rb(r) = rb(r) + 1
+                End If
+                If h &lt; CharactersPerLine + 1 Then
+                  h = h + 1
+                  y = y + HeightPerAGrid
+                Else
+                  Exit Do
+                End If
+              &apos;---- begin bracket
+              ElseIf p2 &gt; 0 Then
+                If h &lt;= CharactersPerLine Then
+                  oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(BEGIN_BRACKETS_V, p2, 1) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                  If eType = &quot;+&quot; Then
+                    pos = pos + 1
+                  End If
+                  If elem = &quot;b&quot; Then
+                    rb(r) = rb(r) + 1
+                  End If
+                  h = h + 1
+                  y = y + HeightPerAGrid
+                Else
+                  Exit Do
+                End If
+              &apos;---- normal character
+              Else
+                If h &lt;= CharactersPerLine Then
+                  If ascii Then
+                    y = y + HeightPerAGrid
+                    ascii = FALSE
+                  End If
+                  If char = &quot;ー&quot; Then
+                    If att = &quot;&quot; Then
+                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format((y - CharHeightAsian), kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                    Else
+                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format((y - CharHeightAsian), kFRAC) &amp; &quot;&quot;&quot; rotate=&quot;&quot;90&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format((CharHeight + 4), kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                    End If
+                  Else
+                    If att = &quot;&quot; Then
+                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                    Else
+                      oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; font-family=&quot;&quot;&quot; &amp; CharFontName &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format((CharHeight + 4), kFRAC) &amp; &quot;pt&quot;&quot;&gt;&quot; &amp; char &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+                    End If
+                  End If
+                  If eType = &quot;+&quot; Then
+                    pos = pos + 1
+                  End If
+                  If elem = &quot;b&quot; Then
+                    rb(r) = rb(r) + 1
+                  End If
+                  h = h + 1
+                  y = y + HeightPerAGrid
+                Else
+                  Exit Do
+                End If
+              End If
+            End If  &apos;----Len(char) &gt; 0
+          &apos;---- ruby text
+          ElseIf elem = &quot;t&quot; And (eType = &quot;+&quot; Or eType = &quot;-&quot;)  Then
+            rt(r) = rt(r) &amp; char
+            If eType = &quot;+&quot; Then
+              pos = pos + 1
+            End If
+          Else
+            &apos;----
+          End If
+        Loop  &apos;---- Do While TRUE
+        If loopBreak Then
+          Exit Do
+        End If
+        w = w + 1
+        x = x - WidthPerAGrid
+        If elem = &quot;b&quot; Then
+          rz(r) = TRUE
+        End If
+      Loop  &apos;---- Do Until w &gt; GridLines
+      If r &gt;= 0 Then
+        Dim r_  As Integer
+        Dim baseTextTop    As Double
+        Dim baseTextHeight As Double
+        Dim rubyTextPitch  As Double
+        Dim t              As Integer  &apos;---- index of ruby text
+        For r_ = 0 To r
+          baseTextTop    = ry(r_) - HeightPerAGrid
+          baseTextHeight = rb(r_) * HeightPerAGrid
+          rubyTextPitch = baseTextHeight / Len(rt(r_))
+          If rz(r_) Then
+            x = rx(r_) + HeightPerAGrid - WidthPerAGrid
+            y = TopMargin + rubyTextPitch
+          Else
+            x = rx(r_) + HeightPerAGrid
+            y = baseTextTop + rubyTextPitch
+          End If
+          For t = 1 To Len(rt(r_))
+            oOutputStream.writeString( &quot;  &lt;text x=&quot;&quot;&quot; &amp; Format(x, kFRAC) &amp; &quot;&quot;&quot; y=&quot;&quot;&quot; &amp; Format(y, kFRAC) &amp; &quot;&quot;&quot; font-size=&quot;&quot;&quot; &amp; Format(RubyFontHeight, kFRAC) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Mid(rt(r_), t, 1)  &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+            y = y + rubyTextPitch
+          Next t
+        Next r_
+        r = -1
+      End If
+      oOutputStream.writeString( &quot;  &lt;/g&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot;  &lt;/svg&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot; &lt;/body&gt;&quot; &amp; CR )
+      oOutputStream.writeString( &quot;&lt;/html&gt;&quot; &amp; CR )
+      If pos &lt; Len(sParas) Then
+        oOutputStream.flush()
+        oOutputStream.closeOutput()
+        iSVGNumber = iSVGNumber + 1
+        vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/&quot; &amp; Format(iSVGNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+        oOutputStream.setOutputStream(vOutputData)
+        oOutputStream.setEncoding(&quot;UTF-8&quot;)
+        oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xmlns:xml=&quot;&quot;http://www.w3.org/XML/1998/namespace&quot;&quot; xml:lang=&quot;&quot;ja&quot;&quot;&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;  &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot; /&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot;  &lt;title&gt;&quot; &amp; MetaTitle &amp; &quot; (&quot; &amp; iSVGNumber &amp; &quot;)&lt;/title&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
+        oOutputStream.writeString( &quot; &lt;body&gt;&quot; &amp; CR )
+      Else
+        Exit Do
+      End If
+    Loop  &apos;---- Do While pos &lt;= Len(sParas)
+    oBar.end  &apos;++++++++++
+    oOutputStream.flush()
+    oOutputStream.closeOutput()
+  Next iContentNumber  &apos;---- For iContentNumber = 0 To iContentNumbers
+  iSVGNumbers = iSVGNumber
+  &apos;---- kill contentxxxx.xhtml
+  For iContentNumber = 0 To iContentNumbers
+    Kill(MyEpubFolder &amp; &quot;/text/&quot; &amp; contentXhtmls(iContentNumber))
+  Next iContentNumber
+  &apos;---- rename xxxx.xhtml As contentxxxx.xhtml
+  NextFile = Dir(MyEpubFolder &amp; &quot;/text/&quot;, 0)
+  While NextFile &lt;&gt; &quot;&quot;
+    If Right(NextFile, 5) = &quot;xhtml&quot; Then
+      Name MyEpubFolder &amp; &quot;/text/&quot; &amp; NextFile As MyEpubFolder &amp; &quot;/text/content&quot; &amp; NextFile
+    End If
+    NextFile = Dir
+  WEnd
+End Sub
+
+&apos;____________________________ NextChar
+Function NextChar(sParas As String, pos As Integer, eType As String) As String
+  Dim tag  As String
+  Dim char As String
+  Dim c    As Integer
+  c = pos
+  If     Mid(sParas, c, 1) = &quot;&lt;&quot; Then
+    c = c + 1
+    char = &quot;&quot;
+    tag = &quot;&quot;
+    Do Until Mid(sParas, c, 1) = &quot;&gt;&quot;
+      tag = tag &amp; Mid(sParas, c, 1)
+      c = c + 1
+    Loop
+    pos = c + 1
+    If     tag = &quot;div class=&quot;&quot;center&quot;&quot;&quot; Then
+      eType = &quot;div center&quot;
+    ElseIf tag = &quot;div class=&quot;&quot;right&quot;&quot;&quot; Then
+      eType = &quot;div right&quot;
+    ElseIf Left(tag, 1) = &quot;h&quot; Then
+      If Left(tag, 3) = &quot;h1 &quot; Then
+        eType = &quot;h01&quot;          &apos;---- h1
+      ElseIf Left(tag, 4) = &quot;h10 &quot; Then
+        eType = &quot;h10&quot;         &apos;---- h10
+      Else
+        eType = &quot;h0&quot; &amp; Mid(tag, 2, 1)  &apos;---- h1 to h9
+      End If
+    Else
+      eType = tag  &apos;---- /div, /h1, /h2, ..., /h10,  b, /b, i, /i
+    End If
+  ElseIf Mid(sParas, c, 1) = &quot;&amp;&quot; Then
+    If     Mid(sParas, c, 4) = &quot;&amp;lt;&quot; Then
+      char = &quot;&lt;&quot;
+      eType = &quot;-&quot;
+      pos = c + 4
+    ElseIf Mid(sParas, c, 4) = &quot;&amp;gt;&quot; Then
+      char = &quot;&gt;&quot;
+      eType = &quot;-&quot;
+      pos = c + 4
+    ElseIf Mid(sParas, c, 5) = &quot;&amp;amp;&quot; Then
+      char = &quot;&amp;&quot;
+      eType = &quot;-&quot;
+      pos = c + 5
+    ElseIf Mid(sParas, c, 6) = &quot;&amp;nbsp;&quot; Then
+      char = &quot; &quot;
+      eType = &quot;-&quot;
+      pos = c + 6
+    End If
+  Else
+    char = Mid(sParas, c, 1)
+    eType = &quot;+&quot;
+  End If
+  NextChar = char
+End Function
+&apos;++
+
+&apos;==============================
+</script:module>

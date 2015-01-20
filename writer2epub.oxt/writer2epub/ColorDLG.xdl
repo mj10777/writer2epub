@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="ColorDLG" dlg:left="151" dlg:top="29" dlg:width="196" dlg:height="134" dlg:help-text="&amp;775.ColorDLG.HelpText" dlg:closeable="true" dlg:moveable="true" dlg:title="&amp;776.ColorDLG.Title">
+ <dlg:styles>
+  <dlg:style dlg:style-id="0" dlg:border="simple"/>
+ </dlg:styles>
+ <dlg:bulletinboard>
+  <dlg:button dlg:id="CB_OK" dlg:tab-index="1" dlg:left="125" dlg:top="109" dlg:width="52" dlg:height="14" dlg:help-text="&amp;1081.ColorDLG.CB_OK.HelpText" dlg:value="OK" dlg:button-type="ok"/>
+  <dlg:button dlg:id="CB_Cancel" dlg:tab-index="2" dlg:left="125" dlg:top="89" dlg:width="52" dlg:height="14" dlg:help-text="&amp;1085.ColorDLG.CB_Cancel.HelpText" dlg:value="Cancel" dlg:button-type="cancel"/>
+  <dlg:img dlg:style-id="0" dlg:id="IC_color" dlg:tab-index="0" dlg:left="6" dlg:top="10" dlg:width="107" dlg:height="114" dlg:help-text="&amp;1087.ColorDLG.IC_color.HelpText"/>
+  <dlg:text dlg:id="Label" dlg:tab-index="3" dlg:left="125" dlg:top="14" dlg:width="52" dlg:height="14" dlg:help-text="&amp;1090.ColorDLG.Label.HelpText" dlg:value="&amp;1091.ColorDLG.Label.Label"/>
+  <dlg:text dlg:id="X" dlg:tab-index="4" dlg:left="141" dlg:top="38" dlg:width="20" dlg:height="11" dlg:help-text="&amp;1095.ColorDLG.X.HelpText"/>
+  <dlg:text dlg:id="Y" dlg:tab-index="5" dlg:left="141" dlg:top="56" dlg:width="20" dlg:height="11" dlg:help-text="&amp;1097.ColorDLG.Y.HelpText"/>
+ </dlg:bulletinboard>
+</dlg:window>

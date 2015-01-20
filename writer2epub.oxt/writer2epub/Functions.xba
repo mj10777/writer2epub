@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Functions" script:language="StarBasic">
+function ReplFormat ()
+&apos;--- This function replaces any string with another one, using or not the Regular Expressions ---
+	dim oReplace As Object
+	dim SrchAttributes (0) As new com.sun.star.beans.PropertyValue
+	dim ReplAttributes (0) As new com.sun.star.beans.PropertyValue
+	if isMissing (myRegEx) then myRegEx = False
+&apos;	if isMissing (myWholeWord) then myWholeWord = False		&apos;Future use
+	oReplace = ThisComponent.createReplaceDescriptor()	
+	&apos;Regular expression. Match any text 
+	with oReplace
+		.SearchString = &quot;.*&quot;
+		.ReplaceString = &quot;&lt;em&gt;&amp;&lt;/em&gt;&quot;
+		.SearchRegularExpression = True
+		.searchStyles = True
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchAll = True
+	end with
+	SrchAttributes(0).Name = &quot;CharPosture&quot; &apos;Change 
+	SrchAttributes(0).Value = com.sun.star.awt.FontSlant.ITALIC &apos;Change 
+	oReplace.SetSearchAttributes(SrchAttributes()) 
+	ThisComponent.replaceAll (oReplace)
+	
+		with oReplace
+		.SearchString = &quot;.*&quot;
+		.ReplaceString = &quot;&lt;strong&gt;&amp;&lt;/strong&gt;&quot;
+		.SearchRegularExpression = True
+		.searchStyles = True
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchAll = True
+	end with
+	SrchAttributes(0).Name = &quot;CharWeight&quot; &apos;Change 
+	SrchAttributes(0).Value = com.sun.star.awt.FontWeight.BOLD
+	oReplace.SetSearchAttributes(SrchAttributes()) 
+	ThisComponent.replaceAll (oReplace)
+	
+	with oReplace
+		.SearchString = &quot;.*&quot;
+		.ReplaceString = &quot;&lt;span class=&quot;&quot;underline&quot;&quot;&gt;&amp;&lt;/span&gt;&quot;
+		.SearchRegularExpression = True
+		.searchStyles = True
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchAll = True
+	end with
+	SrchAttributes(0).Name = &quot;CharUnderline&quot; &apos;Change 
+	SrchAttributes(0).Value = com.sun.star.awt.FontUnderline.SINGLE
+	oReplace.SetSearchAttributes(SrchAttributes()) 
+	ThisComponent.replaceAll (oReplace)
+	
+	with oReplace
+		.SearchString = &quot;.*&quot;
+		.ReplaceString = &quot;&lt;sup&gt;&amp;&lt;/sup&gt;&quot;
+		.SearchRegularExpression = True
+		.searchStyles = True
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchAll = True
+	end with
+	SrchAttributes(0).Name = &quot;CharEscapement&quot; &apos;Change 
+	SrchAttributes(0).Value = 33
+	oReplace.SetSearchAttributes(SrchAttributes()) 
+	ThisComponent.replaceAll (oReplace)
+	
+		with oReplace
+		.SearchString = &quot;.*&quot;
+		.ReplaceString = &quot;&lt;sub&gt;&amp;&lt;/sub&gt;&quot;
+		.SearchRegularExpression = True
+		.searchStyles = True
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchAll = True
+	end with
+	SrchAttributes(0).Name = &quot;CharEscapement&quot; &apos;Change 
+	SrchAttributes(0).Value = -33
+	oReplace.SetSearchAttributes(SrchAttributes()) 
+	ThisComponent.replaceAll (oReplace)
+	
+	
+end function
+
+function ReplW (mySearchString As string, myReplaceString As string, Optional myRegEx As boolean)
+&apos;--- This function replaces any whole word with another one, using or not the Regular Expressions ---
+	dim oReplace As Object
+	dim SrchAttributes (0) As new com.sun.star.beans.PropertyValue
+	dim ReplAttributes (0) As new com.sun.star.beans.PropertyValue
+	if isMissing (myRegEx) then myRegEx = False
+&apos;	if isMissing (myWholeWord) then myWholeWord = False
+	oReplace = ThisComponent.createReplaceDescriptor()
+	with oReplace
+		.SearchString = mySearchString
+		.ReplaceString = myReplaceString
+		.SearchRegularExpression = myRegEx
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchWords = True
+		.SearchAll = True
+	end with
+	ThisComponent.replaceAll (oReplace)
+end function
+
+function Repl (mySearchString As string, myReplaceString As string, Optional myRegEx As boolean)
+&apos;--- This function replaces any string with another one, using or not the Regular Expressions ---
+	dim oReplace As Object
+	dim SrchAttributes (0) As new com.sun.star.beans.PropertyValue
+	dim ReplAttributes (0) As new com.sun.star.beans.PropertyValue
+	if isMissing (myRegEx) then myRegEx = False
+&apos;	if isMissing (myWholeWord) then myWholeWord = False		&apos;Future use
+	oReplace = ThisComponent.createReplaceDescriptor()
+	with oReplace
+		.SearchString = mySearchString
+		.ReplaceString = myReplaceString
+		.SearchRegularExpression = myRegEx
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchAll = True
+	end with
+	ThisComponent.replaceAll (oReplace)
+end function
+
+function MyFind (mySearchString As string, Optional myRegEx As boolean)
+	dim oFind As Object
+	dim FindAttributes (0) As new com.sun.star.beans.PropertyValue
+	if isMissing (myRegEx) then myRegEx = False
+	oReplace = ThisComponent.createReplaceDescriptor()
+	with oReplace
+		.SearchString = mySearchString
+		.ReplaceString = myReplaceString
+		.SearchRegularExpression = myRegEx
+		.SearchCaseSensitive = True 
+		.SearchStyles = False
+		.SearchAll = True
+	end with
+	ThisComponent.replaceAll (oReplace)
+end function
+
+
+Function GoTop()
+	dim document   As object
+	dim dispatcher As object
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:GoToStartOfDoc&quot;, &quot;&quot;, 0, Array())
+End Function
+
+Function GoBottom()
+	dim document   As object
+	dim dispatcher As object
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:GoToEndOfDoc&quot;, &quot;&quot;, 0, Array())
+end Function
+
+
+Function Txt (TextToAdd As String)
+	dim document   As object
+	dim dispatcher As object
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dim args1(0) As new com.sun.star.beans.PropertyValue
+	args1(0).Name = &quot;Text&quot;
+	args1(0).Value = TextToAdd
+	dispatcher.executeDispatch(document, &quot;.uno:InsertText&quot;, &quot;&quot;, 0, args1())
+	dispatcher.executeDispatch(document, &quot;.uno:InsertPara&quot;, &quot;&quot;, 0, Array())
+End Function
+
+Function CleanTags (sStr As String)
+
+&apos;This function is used to remove all kind of tags inside of a string.
+&apos;Used mainly to clean items to insert in the TOC
+
+	Dim p,l,b,e As Integer
+	Dim myStr As String
+	Dim isTag As Boolean
+	isTag = False
+	Do While InStr(sStr(i,1), &quot;&lt;br /&gt;&quot;)		&apos;transform all &lt;br / &gt; in spaces
+		b = InStr(1, sStr(i,1), &quot;&lt;br /&gt;&quot;)
+		mid (sStr(i,1),b ,6 , &quot; &quot;)
+	Loop
+	Do While InStr(myStr(i,1), CR)			&apos;transform all CR in spaces
+		l = Len(myStr(i,1))
+		p = InStr(1, myStr(i,1), CR)
+		myStr(i,1) = Left (myStr(i,1), p-1) &amp; &quot; &quot; &amp; Right (myStr(i,1), l-p)
+	Loop		
+	For i = 1 To len(sStr)					&apos;remove all text included between &lt;&gt;
+		Select Case Mid(sStr,i,1)
+		Case &quot;&lt;&quot;
+			isTag = True
+		Case &quot;&gt;&quot;
+			isTag = False
+		End Select
+		If Not isTag And Mid(sStr,i,1)&lt;&gt;&quot;&gt;&quot; Then
+			myStr = myStr &amp; Mid(sStr,i,1)
+		End If
+	Next i
+	CleanTags() = myStr
+End Function
+
+Function Slip2(sSource As String, sSearch As String, sReplace As String) As String
+	Dim pStart As Integer &apos; search position
+	Dim pEnd As Integer &apos; length of 
+	Dim L1 As Integer &apos; length of the 
+	Dim L2  As Integer
+	Dim sTarget As String
+	Dim sLeft As String		&apos; the string portion before the replaced string
+	Dim sRight As String	&apos; the string portion after the replaced string
+	sTarget = sSource
+	Do While InStr(sTarget, sSearch)
+		pStart = InStr(1,sTarget, sSearch)
+		If pStart &gt; 1 Then
+			sLeft = Left(sTarget, pStart -1)
+		Else
+			sLeft = &quot;&quot;    
+		End If
+		sRight = Right(sTarget, Len(sTarget) - Len(sSearch) - pStart +1) 
+		sTarget = sLeft &amp; sReplace &amp; sRight
+	&apos;	msgbox sSource &amp; chr(13) &amp; &quot;left:  &quot; &amp; sleft &amp; chr(13) &amp; &quot;right: &quot; &amp; sright
+	Loop
+	Slip = sTarget
+End Function
+
+Function spaceRemover (myString)
+	Dim p As Integer
+	Dim sStr As String
+		For p = 1 To Len(myString)
+			If Mid(myString, p, 1) &lt;&gt; &quot; &quot; Then
+			sStr = sStr &amp; Mid(myString, p, 1)
+		End If
+	Next p
+	spaceRemover = sStr
+End Function
+
+
+Sub setDevDialog
+	Dim Dlg1 As Object	 
+	DialogLibraries.LoadLibrary(&quot;writer2epub&quot;)
+	Dlg1 = CreateUnoDialog(DialogLibraries.writer2epub.DevDLG)
+	Dlg1.Execute()
+	Dlg1.dispose()
+End Sub
+
+
+Function AddClass (sStr, myClass As String)
+	Dim myStart, myLen As integer
+	&apos;look for the first &gt;
+	myStart = InStr (sStr, &quot;&gt;&quot;)
+	myLen = Len (sStr)
+	If myStart &gt; 0 Then
+		If InStr(left(sStr, myStart),&quot;class=&quot;)=0 Then
+			sStr = Left(sStr, myStart-1) &amp; &quot; class=&quot;&quot;&quot; &amp; myClass &amp; &quot;&quot;&quot;&quot; &amp; Right (sStr, myLen-myStart+1)
+		End If
+	End If
+	AddClass = sStr
+End Function
+
+Function Replace(Source As String, Search As String, NewPart As String)
+  Dim Result As String
+  Dim StartPos As Long
+  Dim CurrentPos As Long
+  
+  Result = &quot;&quot;
+  StartPos = 1
+  CurrentPos = 1
+ 
+  If Search = &quot;&quot; Then
+    Result = Source
+  Else 
+    Do While CurrentPos &lt;&gt; 0
+      CurrentPos = InStr(StartPos, Source, Search)
+      If CurrentPos &lt;&gt; 0 Then
+        Result = Result + Mid(Source, StartPos, CurrentPos - StartPos)
+        Result = Result + NewPart
+        StartPos = CurrentPos + Len(Search)
+      Else
+        Result = Result + Mid(Source, StartPos, Len(Source))
+      End If                &apos; Position &lt;&gt; 0
+    Loop 
+  End If 
+ 
+  Replace = Result
+End Function
+
+
+
+Function GetLanguage
+
+	Dim OOLang As string	
+ 	Dim aSettings, aConfigProvider
+ 	Dim aParams2(0) As new com.sun.star.beans.PropertyValue
+ 	
+	aParams2(0).Name = &quot;nodepath&quot;
+ 	aParams2(0).Value = &quot;/org.openoffice.Setup/L10N&quot;
+ 	aConfigProvider = createUnoService(&quot;com.sun.star.configuration.ConfigurationProvider&quot; )
+ 	aSettings = aConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;, aParams2() )
+ 	OOLang = aSettings.getbyname(&quot;ooLocale&quot;)
+ 	GetLanguage = OOLang
+ 	
+End Function
+
+
+Function extensionLocation
+On Error Resume Next
+&apos; this routine returns the path of writer2epub extension, useful to embed and access files 	
+	Dim pip As Object
+	Const extensionIdentifier as String = &quot;vnd.writer2epub&quot;
+	pip = GetDefaultContext.getByName(&quot;/singletons/com.sun.star.deployment.PackageInformationProvider&quot;)
+	extensionLocation = pip.getPackageLocation(extensionIdentifier)
+	&apos; display a human readable address
+&apos;	extensionLocation = ConvertFromURL(extensionLocation)
+End Function
+
+
+Sub myLockController()
+	fenDoc = ThisComponent.CurrentController.Frame.ContainerWindow 
+	ThisComponent.lockControllers 
+	fenDoc.Enable = False 
+End Sub
+
+Sub myUnlockController()
+	fenDoc = ThisComponent.CurrentController.Frame.ContainerWindow 
+	fenDoc.Enable = True 
+	ThisComponent.unlockControllers 
+End Sub
+
+Sub CreateW2Esignature
+
+	Open MyEpubFolder + &quot;/text/w2e.xhtml&quot; For Output As #1
+	Print #1, &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot;
+	Print #1, &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot;
+	Print #1, &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot;
+	Print #1, &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot;
+	Print #1, &quot; &lt;head&gt;&quot;
+	Print #1, &quot; &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot;
+	Print #1, &quot; &lt;title&gt;&lt;/title&gt;&quot;
+	Print #1, &quot; &lt;/head&gt;&quot;
+	Print #1, &quot; &lt;body&gt;&quot;
+	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;  &lt;div class=&quot;&quot;center&quot;&quot;&gt;&lt;img src=&quot;&quot;../images/w2e.jpg&quot;&quot; width=&quot;&quot;27%&quot;&quot; alt=&quot;&quot;Writer2ePub&quot;&quot; /&gt;&lt;/div&gt;&quot;
+	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&lt;a href=&quot;&quot;http://writer2epub.it&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;Created with &lt;/span&gt;&lt;span class=&quot;&quot;underline&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;Writer2ePub&lt;/span&gt;&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&quot;
+	Print #1, &quot;  &lt;p class=&quot;&quot;center&quot;&quot;&gt;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;by Luca Calcinai&lt;/span&gt;&lt;/p&gt;&quot;
+	Print #1, &quot;  &lt;p&gt;&nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot;  &lt;p&gt;&nbsp;&lt;/p&gt;&quot;
+	Print #1, &quot; &lt;/body&gt;&quot;
+	Print #1, &quot;&lt;/html&gt;&quot;
+	Close #1
+	
+	If Not FileExists (MyEpubFolder &amp; &quot;/images/&quot;) Then
+		MkDir (MyEpubFolder &amp; &quot;/images/&quot;)
+	End If
+	
+	Filecopy extensionLocation() &amp; &quot;/icons/Writer2Epub-200x120.jpg&quot;, MyEpubFolder &amp; &quot;/images/w2e.jpg&quot;
+
+End Sub
+  
+sub testclass
+	dim a, b As string
+	a=&quot;&lt;div class=&quot;&quot;pippo&quot;&quot;&gt;ciao bello&lt;/div&gt;&quot;
+	b=&quot;center&quot;
+	msgbox addclass (a, b)
+end sub
+
+
+Function Strng (myString As String, i As Integer, Optional j As Integer) As String
+	&apos;returns the string fom character i to j
+	If i &gt; Len (myString ) Then
+		Strng = &quot;&quot;
+	Else
+		Strng = Mid (myString, i, 1)
+	End If
+End Function
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Sub ErrorHandler
+
+	myUnlockController
+	Beep
+	myTime = Timer - myTime
+	oDoc.Close (True)
+	If myPrefs.getPropertyValue(&quot;CloseDocument&quot;) = &quot;False&quot; then	
+		oDoc = starDesktop.loadComponentFromUrl (sDocURL, &quot;_blank&quot;, 0, Array())
+	End If
+	oBar.end
+	myLog = myLog &amp; CR &amp; &quot;Error &quot; &amp; Err &amp; &quot;: &quot; &amp; Error$ + CR + &quot;In Module: &quot; + MyModule + &quot; - At line : &quot; + Erl &apos; + CR + Now
+&apos;	myLog = &quot;!!!! ERRORS !!!!&quot; &amp; myTime &amp; endMSG3 &amp; CR &amp; CR &amp; myLog
+	DialogLibraries.LoadLibrary(sMyAppName)
+	Dlg=CreateUnoDialog(DialogLibraries.writer2epub.EndDLG)
+	Dlg.getControl(&quot;Log&quot;).text = myLog
+	Dlg.getControl(&quot;Log&quot;).model.TextColor = 16711680
+	Dlg.getControl(&quot;Logo&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/error.jpg&quot;)	
+	Dlg.getControl(&quot;Donate&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/donate_btn.gif&quot;)
+	Dlg.Execute()     
+	dlg.dispose()	
+&apos;	SupportMail
+	End	
+End Sub
+
+Sub StopHere
+	myUnlockController
+	Beep
+	msgbox &quot;stop here&quot;
+	End	
+End Sub
+</script:module>

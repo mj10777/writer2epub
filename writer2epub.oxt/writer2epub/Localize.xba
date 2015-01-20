@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Localize" script:language="StarBasic">Public saveBeforeMSG As String
+Public saveAsOdtMSG As String
+Public endMSG1 As String
+Public endMSG2 As String
+Public endMSG3 As String
+Public yesMSG As String
+Public noMSG As String
+Public progImgMSG As String
+Public progParaMSG As String
+Public startMSG As String
+Public createTocMSG As String
+Public createCssMSG As String
+Public createSvgMSG As String
+Public noHeadingsPresentMSG As String
+Public unsupportedStylesMSG As String
+&apos;++++++++++
+
+Sub InitLocal
+
+ 	Dim OOLang As string
+ 	Dim dlg As Object	
+&apos; 	Dim aSettings, aConfigProvider
+&apos;	Dim aParams2(0) As new com.sun.star.beans.PropertyValue
+&apos; 	
+&apos;	aParams2(0).Name = &quot;nodepath&quot;
+&apos; 	aParams2(0).Value = &quot;/org.openoffice.Setup/L10N&quot;
+&apos; 	aConfigProvider = createUnoService(&quot;com.sun.star.configuration.ConfigurationProvider&quot; )
+&apos; 	aSettings = aConfigProvider.createInstanceWithArguments(&quot;com.sun.star.configuration.ConfigurationAccess&quot;, aParams2() )
+&apos; 	OOLang = aSettings.getbyname(&quot;ooLocale&quot;)
+	OOLang = GetLanguage
+&apos;	DialogLibraries.LoadLibrary(sMyAppName)
+&apos;	dlg=CreateUnoDialog(DialogLibraries.writer2epub.LocalizeDLG)	
+&apos;	msgbox dlg.getControl(&quot;saveBeforeMSG&quot;).text
+	
+&apos;========== Standard messages (English) =======
+
+			saveBeforeMSG = &quot;Please save your text before processing!&quot;
+			saveAsOdtMSG = &quot;Please save your document as ODT format before continue&quot;
+			endMSG1 = &quot;ePub Export Complete&quot;
+			endMSG2 = &quot;(Duration: &quot;
+			endMSG3 = &quot; Seconds)&quot;
+			yesMSG = &quot;Yes&quot;
+			noMSG = &quot;No&quot;
+			OkMSG = &quot;OK&quot;
+			CancelMSG = &quot;Cancel&quot;
+			startMSG = &quot;Export begins...&quot;
+			progImgMSG = &quot;Exporting Pictures...&quot;
+			progParaMSG = &quot;Exporting paragraphs...&quot;
+			createTocMSG = &quot;Create TOC&quot;
+			createCssMSG = &quot;Create CSS&quot;
+			createSvgMSG = &quot;Create SVG&quot;
+			noHeadingsPresentMSG = &quot;No header present, the TOC will not be created&quot;
+			unsupportedStylesMSG = &quot;Warning! The following styles are not supported and will be treated as plain text&quot;
+			unsupportedStylesMSG = unsupportedStylesMSG &amp; CR &amp; &quot;If you really need personal styles, please start the style name with w2e_&quot;
+
+&apos;============== Localized messages =============
+
+	Select Case OOLang
+	    Case &quot;zh-CN&quot;:		&apos;Simplified Chinese
+			saveBeforeMSG = &quot;发送前保存文本&quot;
+			saveAsOdtMSG = &quot;Please save your document as ODT format before continue&quot;
+			endMSG1 = &quot;ePub出口總&quot;
+			endMSG2 = &quot;(时间: &quot;
+			endMSG3 = &quot; 秒)&quot;
+			yesMSG = &quot;是&quot;
+			noMSG = &quot;否&quot;
+			startMSG = &quot;执行短信发送&quot;
+			progImgMSG = &quot;执行传输图片&quot;
+			progParaMSG = &quot;执行文字传输&quot;
+			createTocMSG = &quot;创建TOC&quot;
+			createCssMSG = &quot;创建CSS&quot;
+			createSvgMSG = &quot;创建SVG&quot;
+			noHeadingsPresentMSG = &quot;无头目前，TOC 将不会创建&quot;
+			unsupportedStylesMSG = &quot;&quot;
+		Case &quot;zh-TW&quot;:		&apos;Traditional Chinese
+			saveBeforeMSG = &quot;发送前保存文本&quot;
+			SaveAsOdtMSG = &quot;Please save your document as ODT format before continue&quot;
+			endMSG1 = &quot;ePub出口總&quot;
+			endMSG2 = &quot;(时间: &quot;
+			endMSG3 = &quot; 秒)&quot;
+			yesMSG = &quot;是&quot;
+			noMSG = &quot;否&quot;
+			startMSG = &quot;执行短信发送&quot;
+			progImgMSG = &quot;执行传输图片&quot;
+			progParaMSG = &quot;执行文字传输&quot;
+			createTocMSG = &quot;创建TOC&quot;
+			createCssMSG = &quot;创建CSS&quot;
+			createSvgMSG = &quot;创建SVG&quot;
+			noHeadingsPresentMSG = &quot;无头目前，TOC 将不会创建&quot;
+			unsupportedStylesMSG = &quot;&quot;
+		Case &quot;de&quot;:		&apos;German
+			saveBeforeMSG = &quot;Bitte sichern sie zunächst ihr Dokument!&quot;
+			saveAsOdtMSG = &quot;Please save your document as ODT format before continue&quot;
+			endMSG1 = &quot;ePub-Export beendet&quot;
+			endMSG2 = &quot;(Dauer: &quot;
+			endMSG3 = &quot; Sekunden)&quot;
+			yesMSG = &quot;Ja&quot;
+			noMSG = &quot;Nein&quot;
+			OkMSG = &quot;OK&quot;
+			CancelMSG = &quot;Abbrechen&quot;
+			startMSG = &quot;Beginne Export...&quot;
+			progImgMSG = &quot;Exportiere Bilder...&quot;
+			progParaMSG = &quot;Exportiere Absätze...&quot;
+			createTocMSG = &quot;Erstelle TOC...&quot;
+			createCssMSG = &quot;Erstelle CSS...&quot;
+			createSvgMSG = &quot;Erstelle SVG...&quot;
+			noHeadingsPresentMSG = &quot;Da keine Überschriften definiert sind, wird kein Inhaltsverzeichnis erstellt.&quot;
+			unsupportedStylesMSG = &quot;Achtung! Die folgenden Formatvorlagen werden nicht unterstützt. Sie werden wie normaler Text behandelt.&quot;
+			unsupportedStylesMSG = unsupportedStylesMSG &amp; CR &amp; &quot;(Wollen Sie dennoch eigene Absatzformate verwenden, müssen deren Namen mit w2e_ beginnen, einschließlich Unterstrich.)&quot;
+&apos;	   	Case &quot;en&quot;:		&apos;English see Standard messages
+	   	Case &quot;es&quot;:		&apos;Spanish
+			saveBeforeMSG = &quot;¡Por favor guarda tu texto antes de procesar!&quot;
+			saveAsOdtMSG = &quot;Please save your document as ODT format before continue&quot;
+			endMSG1 = &quot;Exportación de ePub Completa&quot;
+			endMSG2 = &quot;(Hora: &quot;
+			endMSG3 = &quot; Segundos)&quot;
+			yesMSG = &quot;Si&quot;
+			noMSG = &quot;No&quot;
+			startMSG = &quot;Comienza la exportación...&quot;
+			progImgMSG = &quot;Exportando Imágenes...&quot;
+			progParaMSG = &quot;Exportando Párrafos...&quot;
+			createTocMSG = &quot;Crear TOC&quot;
+			createCssMSG = &quot;Crear CSS&quot;
+			createSvgMSG = &quot;Crear SVG&quot;
+			noHeadingsPresentMSG = &quot;Sin presencia de cabecera, el TOC no se creará&quot;
+			unsupportedStylesMSG = &quot;¡Advertencia! Los siguientes estilos no son compatibles y serán tratados como texto sin formato&quot;
+		Case &quot;fi&quot;:		&apos;Finnish
+		Case &quot;fr&quot;:		&apos;French
+			saveBeforeMSG = &quot;Merci de sauvegarder votre texte avant de procéder !&quot;
+			saveAsOdtMSG = &quot;Please save your document as ODT format before continue&quot;
+			endMSG1 = &quot;Export en ePub complété&quot;
+			endMSG2 = &quot;(Temps: &quot;
+			endMSG3 = &quot; Secondes)&quot;
+			yesMSG = &quot;Oui&quot;
+			noMSG = &quot;Non&quot;
+			startMSG = &quot;Début de l&apos;export...&quot;
+			progImgMSG = &quot;Export des images...&quot;
+			progParaMSG = &quot;Export des paragraphes...&quot;
+			createTocMSG = &quot;Création de la Table des Matières&quot;
+			createCssMSG = &quot;Création des CSS&quot;
+			createSvgMSG = &quot;Création de l&apos;SVG&quot;
+			noHeadingsPresentMSG = &quot;Non présents tête, le TOC ne sera pas créé&quot;
+			unsupportedStylesMSG = &quot;Attention! Les styles suivants ne sont pas supportés et seront traités sous forme de texte&quot;
+		Case &quot;it&quot;:		&apos;Italian
+			saveBeforeMSG = &quot;Salva il tuo testo prima di procedere!&quot;
+			saveAsOdtMSG = &quot;Salva il tuo documento in formato ODT prima di continuare&quot;
+			endMSG1 = &quot;Esportazione ePub Completata&quot;
+			endMSG2 = &quot;(Tempo: &quot;
+			endMSG3 = &quot; Secondi)&quot;
+			yesMSG = &quot;Sì&quot;
+			noMSG = &quot;No&quot;
+			OkMSG = &quot;OK&quot;
+			CancelMSG = &quot;Annulla&quot;
+			startMSG = &quot;Inizio Esportazione...&quot;
+			progImgMSG = &quot;Esportazione immagini...&quot;
+			progParaMSG = &quot;Esportazione paragrafi...&quot;
+			createTocMSG = &quot;Creazione TOC&quot;
+			createCssMSG = &quot;Creazione CSS&quot;
+			createSvgMSG = &quot;Creazione SVG&quot;
+			noHeadingsPresentMSG = &quot;Nessuna intestazione presente, la TOC non verrà creata&quot;
+			unsupportedStylesMSG = &quot;Attenzione! I seguenti stili non sono supportati&quot; &amp; CR &amp; &quot;e saranno trattati come testo normale:&quot;
+			unsupportedStylesMSG = unsupportedStylesMSG &amp; CR &amp; &quot;Per usare stili personalizzati assicurarsi che il nome inizi con w2e_&quot;
+		Case &quot;ja&quot;:		&apos;Japanese
+			saveBeforeMSG = &quot;処理する前に文書を保存してください。&quot;
+			endMSG1 = &quot;ePub へのエクスポートが完了しました。&quot;
+			endMSG2 = &quot;(処理時間： &quot;
+			endMSG3 = &quot; 秒)&quot;
+			yesMSG = &quot;はい&quot;
+			noMSG = &quot;いいえ&quot;
+			startMSG = &quot;エクスポートを開始します&quot;
+			progImgMSG = &quot;画像をエクスポートします&quot;
+			progParaMSG = &quot;段落をエクスポートします&quot;
+			createTocMSG = &quot;TOCを生成します&quot;
+			createCssMSG = &quot;CSSを生成します&quot;
+			createSvgMSG = &quot;SVGを生成します&quot;
+			noHeadingsPresentMSG = &quot;いいえヘッダが存在する、TOC は作成されません。&quot;
+			unsupportedStylesMSG = &quot;警告！次のスタイルがサポートされていないため、プレーンテキストとして扱われます&quot;
+		Case &quot;nl&quot;:		&apos;Dutch
+			yesMSG = &quot;Ja&quot;
+			noMSG = &quot;Nee&quot;    &apos;		&quot;Cancel&quot; == &quot;Annuleren&quot;
+		Case &quot;pl&quot;:		&apos;Polish
+			saveBeforeMSG = &quot;Aby kontynuować, zapisz dokument&quot;
+			saveAsOdtMSG = &quot;Please save your document as ODT format before continue&quot;
+			endMSG1 = &quot;Eksport ePub zakończony&quot;
+			endMSG2 = &quot;(Czas: &quot;
+			endMSG3 = &quot; sekundy)&quot;
+			yesMSG = &quot;Tak&quot;
+			noMSG = &quot;Nie&quot;
+			startMSG = &quot;Rozpoczęcie eksportu...&quot;
+			progImgMSG = &quot;Przetwarzanie obrazków...&quot;
+			progParaMSG = &quot;Przetwarzanie akapitów...&quot;
+			createTocMSG = &quot;Tworzenie TOC&quot;
+			createCssMSG = &quot;Tworzenie CSS&quot;
+			createSvgMSG = &quot;Tworzenie SVG&quot;
+			noHeadingsPresentMSG = &quot;Brak Obecnie logo, TOC nie zostanie utworzony&quot;
+			unsupportedStylesMSG = &quot;Uwaga!Następujące style nie są obsługiwane i będą traktowane jako zwykły tekst&quot;
+		Case &quot;pt&quot;:		&apos;Portugal
+			noHeadingsPresentMSG = &quot;Nenhum presente do cabeçalho, o TOC não será criado&quot;
+			unsupportedStylesMSG = &quot;Atenção! Os seguintes estilos não são suportados e será tratado como texto simples&quot;
+		Case &quot;pt-br&quot;:	&apos;Brasilian
+			noHeadingsPresentMSG = &quot;Nenhum presente do cabeçalho, o TOC não será criado&quot;
+			unsupportedStylesMSG = &quot;Atenção! Os seguintes estilos não são suportados e será tratado como texto simples&quot;
+		Case &quot;ru&quot;:		&apos;Russian
+			noHeadingsPresentMSG = &quot;Нет заголовка настоящее TOC не будет создана&quot;
+			unsupportedStylesMSG = &quot;Внимание!Следующие стили не поддерживаются и будут рассматриваться как обычный текст&quot;
+		Case &quot;sv&quot;:		&apos;Svedish
+		Case &quot;ua&quot;:					
+   		End Select
+End Sub
+</script:module>

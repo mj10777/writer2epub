@@ -1,0 +1,1091 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Traverse" script:language="StarBasic">                                                            
+                                             
+
+&apos;Private variables (only available in the module in which they are defined) 
+	Private oDoc As object, oCC As object, oText As object 
+	Private oBMarks As object 
+	Private bmFilesArray as Object
+	Private sDocURL As String, sDocDir As String, sFileN As String, sAllnotes (1000) As string
+	Private fStandardCharHeight   As long       &apos;Compare to &quot;large font&quot; 
+	Private sPrevPageStyle As string            &apos;Change in page style implies page break before! 
+	Private sTitle As string					&apos;Title shown in eReader 
+
+	Private sStartPageCode As string
+	Private replace_StartPageCode As string
+	Private replace_TitleText As string
+	Private sEndPageCode As string
+	Private bBreak As Integer
+	Private bFirstpage As Boolean
+	Private iImageCount
+	Private iLengthCounter As Integer	&apos;counts the charachters for slit every x byte
+	Private iLenghtSplit As Integer		&apos;the max lenght of a file before force split
+	Private fnOutputAccess As Object
+	Private fnOutputStream As Object
+	Private fnOutputData   As Variant
+	Private nFoot As Integer &apos;counts the footnotes found 
+	Private bkMarksCurPageBuffer(0) As String
+	Private EmptyParagraphBefore As Boolean
+	Private prevParWasListItem As Boolean
+
+Sub TraverseText( TraverseSimulate As Boolean) 
+&apos;From: http://www.pitonyak.org/AndrewMacro.odt, Listing 7.52: Enumerate paragraph level text content. 
+	
+	Dim oParEnum As object   &apos;Enumerator used to enumerate the paragraphs 
+	Dim oPar As object      &apos;The enumerated paragraph
+	Dim oContentEnum &apos;Enum content, such As graphics objects
+	Dim oContent     &apos;The numerated content 
+	Dim oCurs As object 
+	Dim sParEx As string   &apos;The exported paragraph 
+	Dim n, nPara,nBkmarks As Long &apos;Paragraph counter 
+	Dim MaxLength, CountLength as Long
+	Dim MyListType As String
+	Dim curListLevel As Integer
+	Dim prevListLevel As Integer	
+ Const replace_title As String = &quot;#replace_title#&quot;
+	
+	oBMarks=oDoc.getBookmarks
+	&apos;clean sToc content
+	ReDim sTOC (10000,3) As String
+	iTocLevel=0
+	iTOCcount=0
+	MyListType = &quot;&quot;
+	EmptyParagraphBefore = True
+	curListLevel = 0
+	prevListLevel = 0
+
+	If TraverseSimulate=True Then
+		If oBMarks.Count = 0 Then
+			Exit Sub &apos;Unuseful to traverse text for internal link computing: no bookmarks founds
+		EndIf
+	
+		ReDim oBMarksfiles(oBMarks.Count-1) As String
+		ReDim bkMarksCurPageBuffer(oBMarks.Count-1) As String
+	EndIf
+
+	MaxLength = val(getPrefValue (&quot;SplitFilesEvery&quot;))*1000 &apos; Max Length of an xhtml file, used to split files
+	CountLength = 0
+	
+	WritingMode = oDoc.StyleFamilies.getByName(&quot;PageStyles&quot;).getByName(&quot;Standard&quot;).WritingMode
+  	
+	sStartPageCode = &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR
+
+	If WritingMode = 2 Then
+		sStartPageCode = sStartPageCode &amp; &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xmlns:xml=&quot;&quot;http://www.w3.org/XML/1998/namespace&quot;&quot; xml:lang=&quot;&quot;ja&quot;&quot;&gt;&quot; &amp; CR
+	Else
+		sStartPageCode = sStartPageCode &amp; &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot; &amp; CR
+	End If
+  
+	sStartPageCode = sStartPageCode &amp; &quot; &lt;head&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;  &lt;title&gt;&quot;&amp; replace_title &amp; &quot;&lt;/title&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot; &lt;/head&gt;&quot; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot; &lt;body&gt;&quot;
+
+	sEndPageCode = &quot; &lt;/body&gt;&quot; &amp; CR
+	sEndPageCode = sEndPageCode &amp; &quot;&lt;/html&gt;&quot; &amp; CR 
+	iImageCount = 0
+	
+	oText = oDoc.Text 
+	
+	iSplitNumber = 1		&apos;GLOBAL VARIABLE
+	bBreak = 0				&apos;0=no break 1= break before 2= break after
+	bFirstpage = True
+	
+	If TraverseSimulate=False Then
+		Dim oOutputAccess As Object
+		Dim oOutputStream As Object
+		Dim vOutputData   As Variant
+	
+		
+		&apos;Footnotes&apos; file creation (a single footnote file for all notes in the document)
+		nFoot=0
+		fnOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		fnOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+		fnOutputData   = fnOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/footnotes.xhtml&quot;)
+		fnOutputStream.setOutputStream(fnOutputData)
+		fnOutputStream.setEncoding(&quot;UTF-8&quot;)
+		fnOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR )
+		fnOutputStream.writeString(&quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR )
+		fnOutputStream.writeString(&quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR )
+		If WritingMode = 2 Then
+			fnOutputStream.writeString(&quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xmlns:xml=&quot;&quot;http://www.w3.org/XML/1998/namespace&quot;&quot; xml:lang=&quot;&quot;ja&quot;&quot;&gt;&quot; &amp; CR)
+		Else
+			fnOutputStream.writeString(&quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot; &amp; CR)
+		End If	
+		fnOutputStream.writeString(&quot; &lt;head&gt;&quot;)	
+		fnOutputStream.writeString(&quot;  &lt;title&gt;&lt;/title&gt;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot; &lt;/head&gt;&quot; &amp; CR)
+		&apos;		fnOutputStream.writeString(&quot;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot; &lt;body&gt;&quot;)
+		
+		oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+		vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+		oOutputStream.setOutputStream(vOutputData)
+		oOutputStream.setEncoding(&quot;UTF-8&quot;)
+		&apos;oOutputStream.writeString( sStartPageCode &amp; CR )
+  replace_StartPageCode=&quot;&quot;
+  replace_TitleText=&quot;&quot;
+	EndIf
+	&apos;---- Show the progress bar
+	nPara = oDoc.ParagraphCount
+	oBar.start(progParaMSG, nPara)
+	n = 0
+	&apos;---- Get &quot;Standard&quot; style CharHeight (I&apos;ll use it to compare &quot;large font&quot; height)
+	oCurs = oText.CreateTextCursor()
+	oCurs.GoToEnd(FALSE)
+	oText.insertControlCharacter(oCurs,com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK,FALSE)
+	oCurs.ParaStyleName = &quot;Standard&quot;
+	fStandardCharHeight = oCurs.CharHeight
+ 
+	&apos;---- Enumerate the paragraphs.
+
+
+
+&apos;	Dim oBMarksfiles(nBkmarks) As String
+	
+	
+&apos;---- Tables are enumerated along with paragraphs
+	oParEnum = oDoc.getText().createEnumeration()
+	Do While oParEnum.hasMoreElements()
+		oPar = oParEnum.nextElement()
+		If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then  &apos;---- This manages the paragraphs
+			n = n + 1
+			oBar.setValue(n + 1 / (nPara+1))
+			oContentEnum = oPar.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While oContentEnum.hasMoreElements()
+				oContent = oContentEnum.nextElement()
+				If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Then
+			&apos;		Print &quot;Found a graphic object anchored to a Paragraph&quot;
+				End If
+			Loop
+			
+&apos;---- DropCaps Handling --------------
+
+			If oPar.DropCapFormat.Count &gt; 0 Then
+				Dim DropCount As Integer
+				Dim DropLines As Integer
+				Dim DropDistance As Integer
+				Dim MyDropPar As String
+				If oPar.DropCapWholeWord Then
+					DropCount = instr (oPar.GetString, &quot; &quot;) - 1
+				Else 
+					DropCount = oPar.DropCapFormat.Count
+				End If
+				DropLines = oPar.DropCapFormat.Lines
+				DropDistance = oPar.DropCapFormat.Distance
+				MyDropPar = &quot;&lt;span class=&quot;&quot;dropcap&quot;&quot;&gt;&quot; &amp; Left (oPar.GetString,DropCount )  &amp; &quot;&lt;/span&gt;&quot; &amp; Right (oPar.GetString,(Len (oPar.GetString) - DropCount))	
+				oPar.SetString MyDropPar
+			End If
+			
+&apos;---- Call Paragraph analysis ------------
+
+			sParEx = fnExportParagraph(oPar,TraverseSimulate)
+   If sTOC (iTocCount, 1) &lt;&gt; replace_TitleText Then
+			 replace_TitleText=sTOC (iTocCount, 1) 
+    if replace_StartPageCode = &quot;&quot; Then
+			  replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
+			  oOutputStream.writeString( replace_StartPageCode &amp; CR )
+    Else
+     replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
+    End If
+   End If
+				    
+&apos;------- lists handling ------------
+	    
+			If oPar.ListId &lt;&gt; &quot;&quot; And InStr (oPar.ParaConditionalStyleName, &quot;Heading&quot;) = 0 Then &apos; This portion may be a list or an heading
+				curListLevel = oPar.NumberingLevel
+				sParEx = Mid (sParEx, 4, Len(sParEx)-7)										&apos;clean &lt;p&gt;&lt;/p&gt; from sParEx
+				Select Case Left(oPar.ListLabelString,1)										&apos;select list type ul,ol etc.
+				Case &quot;&quot;
+					MyType = &quot;&lt;ul&gt;&quot;								&apos;bullet type = &lt;ul&gt;
+					MyTypeEnd = &quot;&lt;/ul&gt;&quot;
+				Case &quot;1&quot;	&apos; to &quot;9&quot;
+					MyType = &quot;&lt;ol class=&quot;&quot;listnumbers&quot;&quot;&gt;&quot;		&apos;numbered type = &lt;ul&gt;
+					MyTypeEnd = &quot;&lt;/ol&gt;&quot;
+				Case &quot;a&quot;	&apos; to &quot;z&quot;
+					MyType = &quot;&lt;ol class=&quot;&quot;listlowercase&quot;&quot;&gt;&quot;		&apos;roman type = &lt;ul&gt;
+					MyTypeEnd = &quot;&lt;/ol&gt;&quot;
+				Case &quot;A&quot;	&apos; to &quot;Z&quot;
+					MyType = &quot;&lt;ol class=&quot;&quot;listcapitals&quot;&quot;&gt;&quot;		&apos;roman type = &lt;ul&gt;
+					MyTypeEnd = &quot;&lt;/ol&gt;&quot;
+				Case &quot;I&quot;	&apos; to &quot;Z&quot;
+					MyType = &quot;&lt;ol class=&quot;&quot;listroman&quot;&quot;&gt;&quot;			&apos;roman type = &lt;ul&gt;
+					MyTypeEnd = &quot;&lt;/ol&gt;&quot;
+				Case &quot;i&quot;	&apos; to &quot;Z&quot;
+					MyType = &quot;&lt;ol class=&quot;&quot;listromanl&quot;&quot;&gt;&quot;		&apos;roman type = &lt;ul&gt;	
+					MyTypeEnd = &quot;&lt;/ol&gt;&quot;
+				Case Else
+					MyType = &quot;&lt;ol&gt;&quot;								&apos;numbered type = &lt;ul&gt;
+					MyTypeEnd = &quot;&lt;/ol&gt;&quot;
+				End Select
+
+				If prevParWasListItem = False Then								&apos; This is the first item of the list
+					sParEx = MyType &amp; CR &amp; MyTab &amp; &quot;&lt;li&gt;&quot; &amp; CR &amp; MyTab &amp; sParEx
+					prevParWasListItem = True 
+				Else															&apos; This is another item of the list
+					Select Case curListLevel
+					Case = prevListLevel
+&apos;						myTab = String ((curListLevel + 1),chr(9))
+&apos;						sParEx = MyTab &amp; &quot;&lt;/li&gt;&quot; &amp; CR &amp; MyTab &amp; &quot;&lt;li&gt;&quot; &amp; CR &amp; MyTab &amp; sParEx
+						sParEx = &quot;&lt;/li&gt;&quot; &amp; CR &amp; &quot;&lt;li&gt;&quot; &amp; CR &amp; sParEx
+					Case &gt; prevListLevel
+						MyTemp = &quot;&quot; 
+						For i = prevListLevel + 1 to curListLevel  
+&apos;							myTab = String (i+1,chr(9))
+&apos;							MyTemp = MyTemp &amp; myTab &amp; MyType &amp; CR &amp; myTab &amp; &quot;&lt;li&gt;&quot; &amp; CR
+							MyTemp = MyTemp &amp; MyType &amp; CR &amp; &quot;&lt;li&gt;&quot; &amp; CR
+						Next i
+&apos;						sParEx = myTab &amp; MyTemp &amp; myTab &amp; sParEx
+						sParEx = MyTemp &amp; sParEx
+					Case &lt; prevListLevel
+						MyTemp = &quot;&quot;
+						For i = curListLevel + 1 to prevListLevel
+&apos;							myTab = String (i,chr(9))
+&apos;							MyTemp = MyTemp &amp; myTab &amp; &quot;&lt;/li&gt;&quot; &amp; CR &amp; myTab &amp; MyTypeEnd &amp; CR
+							MyTemp = MyTemp &amp; &quot;&lt;/li&gt;&quot; &amp; CR &amp; MyTypeEnd &amp; CR
+						Next i
+&apos;						sParEx = MyTab &amp; MyTemp &amp; &quot;&lt;/li&gt;&quot; &amp; CR &amp; MyTab &amp; &quot;&lt;li&gt;&quot; &amp; CR &amp; MyTab &amp; sParEx
+						sParEx = MyTemp &amp; &quot;&lt;/li&gt;&quot; &amp; CR &amp; &quot;&lt;li&gt;&quot; &amp; CR &amp; sParEx
+					End Select
+					prevListLevel = curListLevel
+					prevParWasListItem = True
+				End If
+			Else
+				If prevParWasListItem = True Then								&apos; close the list if any
+					sParEx = MyTab &amp; &quot;&lt;/li&gt; &quot; &amp; CR &amp; MyTypeEnd &amp; CR &amp; sParEx
+					prevParWasListItem = False
+				End If
+			End If
+			
+&apos;---------------------- split file if too long or if page break is found ---------
+
+			CountLength = CountLength + Len (sParEx)
+			If CountLength &gt; MaxLength Then
+				If bBreak = 0 then bBreak = 1
+			End If
+			Select Case bBreak
+			Case 0	&apos;---- no split 
+				If TraverseSimulate=False Then
+					oOutputStream.writeString( sParEx &amp; CR )
+				End If
+			Case 1  &apos;---- split file before&apos;	      
+				If bFirstPage = False Then &apos; Avoid the first page blank
+					iSplitNumber = iSplitNumber +1
+					CountLength = 0
+					prevParWasListItem = False
+					If TraverseSimulate=False Then
+						oOutputStream.writeString( sEndPageCode &amp; CR )
+						oOutputStream.flush()
+						oOutputStream.closeOutput()				
+						vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+						oOutputStream.setOutputStream(vOutputData)
+						oOutputStream.setEncoding(&quot;UTF-8&quot;)
+						oOutputStream.writeString( replace_StartPageCode &amp; CR )
+						oOutputStream.writeString( sParEx &amp; CR )	
+					End If
+				Else
+					If TraverseSimulate=False Then
+						oOutputStream.writeString( sParEx &amp; CR )
+					End If	
+				End If
+			Case 2  &apos;---- split file after
+				iSplitNumber = iSplitNumber +1
+				CountLength = 0
+				prevParWasListItem = False			
+				If TraverseSimulate=False Then
+					oOutputStream.writeString( sParEx &amp; CR )
+					oOutputStream.writeString( sEndPageCode &amp; CR )
+					oOutputStream.flush()
+					oOutputStream.closeOutput()				
+					vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+					oOutputStream.setOutputStream(vOutputData)
+					oOutputStream.setEncoding(&quot;UTF-8&quot;)
+					oOutputStream.writeString( replace_StartPageCode &amp; CR )
+				Endif
+				
+			End Select
+			bFirstPage = False
+			
+			If TraverseSimulate=True Then
+				FlushBookmarksBuffer(&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+				ReDim bkMarksCurPageBuffer(oBMarks.Count-1) As String
+			EndIf
+		End If
+		
+&apos;-------- Export Paragraph text -----------
+
+		If oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then  &apos;---- This manages the tables.
+			If TraverseSimulate = False Then
+				oOutputStream.writeString( fnExportTable(oPar) &amp; CR )
+			End If
+		End If
+	Loop
+	
+	
+	If TraverseSimulate=False Then
+		oOutputStream.writeString( sEndPageCode &amp; CR )
+		oOutputStream.flush()
+		oOutputStream.closeOutput()
+
+		fnOutputStream.writeString(&quot; &lt;/body&gt;&quot; &amp; CR)
+		fnOutputStream.writeString(&quot;&lt;/html&gt;&quot; &amp; CR)
+		fnOutputStream.closeOutput()
+		If nFoot = 0 Then
+			&apos;deleting the empty footnotes file
+			Kill (MyEpubFolder &amp; &quot;/text/footnotes.xhtml&quot;)
+		End If
+	EndIf
+	
+	If myPrefs.getPropertyValue(&quot;Signature&quot;) = True Then
+		CreateW2Esignature
+	End If
+	
+&apos;	MsgBox(&quot;num of files: &quot; &amp; iSplitNumber)
+End Sub 
+
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+function fnExportParagraph(oParagraph As Object, TraverseSimulate As boolean) As string 
+&apos;from: http://www.oooforum.org/forum/viewtopic.phtml?t=12507 
+
+	Dim oEnum As Object, oContent, oContentEnum As Object 
+	dim oFootnote As object 
+	dim sString, sPortion, sType, Temp1, Temp2 As string 
+	dim sLink As string, sNam As string
+	dim I, j, k, bindx As integer
+	Dim RubyText   As String
+
+	RubyText = &quot;&quot;
+
+
+	oEnum = oParagraph.createEnumeration() 
+	sString = &quot;&quot; 
+	
+	While oEnum.hasMoreElements() 
+		oContent = oEnum.nextElement() 
+		sType = oContent.TextPortionType 
+		sPortion = oContent.GetString 
+		sLink = oContent.HyperLinkURL
+		If sType = &quot;Text&quot; Then  &apos;this portion is a text object!			
+			
+			sPortion = Replace (sPortion, chr(10), &quot;&lt;br /&gt;&quot;)
+				
+			If sPortion &lt;&gt; &quot;&quot; then 
+				If InStr(oContent.string, &quot;&lt;&quot;) = 0 then			&apos;this portion doesn&apos;t contains a tag (is not an image)
+					If oContent.CharEscapement &lt; 0 THEN 			&apos;this portion is formatted in subscript 
+						sPortion = &quot;&lt;sub&gt;&quot; &amp; sPortion &amp; &quot;&lt;/sub&gt;&quot; 
+					elseif oContent.CharEscapement &gt; 0 THEN		&apos;this portion is formatted in superscript 
+						sPortion = &quot;&lt;sup&gt;&quot; &amp; sPortion &amp; &quot;&lt;/sup&gt;&quot; 
+				&apos;	elseif oContent.DropCapFormat.Count &gt; 0 Then &apos;This portion is a drop cap
+				&apos;		Dim DropCount As Integer
+				&apos;		Dim DropLines As Integer
+				&apos;		Dim DropDistance As Integer
+				&apos;		DropCount = oContent.DropCapFormat.Count
+				&apos;		sPortion = &quot;&lt;span class=&quot;&quot;dropcap&quot;&quot;&gt;&quot; &amp; Left (sPortion,DropCount )  &amp; &quot;&lt;/span&gt;&quot; &amp; Right (sPortion,(Len (sPortion) - DropCount + 1))
+					else											&apos;\Sb and \Sp should not be mixed with bold, italic, etc. 
+						if oContent.CharCaseMap = 4 THEN 			&apos;this portion is formatted in SmallCaps
+							&apos;--- the right way, but not recognized by ADE
+							&apos;sPortion = &quot;&lt;span style=&quot;&quot;font-variant: small-caps;&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot;	
+							&apos;--- the wrong way (fake smallcaps) workaround for ADE
+							sPortion = fnSmallCaps(sPortion)
+						end if 
+						If oContent.CharWeight &gt; 105 THEN 
+							&apos;this portion is formatted in bold. Constant values for different types of Bold: 
+							&apos;http://api.openoffice.org/docs/common/ref/com/sun/star/awt/FontWeight.html 
+						&apos;	sPortion = &quot;&lt;b&gt;&quot; &amp; sPortion &amp; &quot;&lt;/b&gt;&quot; 
+						&apos;	sPortion = &quot;&lt;span class=&quot;&quot;bold&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+							sPortion = &quot;&lt;strong&gt;&quot; &amp; sPortion &amp; &quot;&lt;/strong&gt;&quot; 
+						end if    
+						if oContent.CharPosture = com.sun.star.awt.FontSlant.ITALIC THEN 
+							&apos;this portion is formatted in italic 
+							&apos;sPortion = &quot;&lt;i&gt;&quot; &amp; sPortion &amp; &quot;&lt;/i&gt;&quot; 
+							&apos;sPortion = &quot;&lt;span class=&quot;&quot;italic&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+							sPortion = &quot;&lt;em&gt;&quot; &amp; sPortion &amp; &quot;&lt;/em&gt;&quot; 
+						end if 
+						if oContent.CharUnderline &gt; 0 THEN 
+							&apos;this portion is underlined. Constant values for different types of Underline: 
+							&apos;http://api.openoffice.org/docs/common/ref/com/sun/star/awt/FontUnderline.html 
+							sPortion = &quot;&lt;span class=&quot;&quot;underline&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+						end if 
+						if oContent.CharStrikeout &gt; 0 THEN 
+							&apos;this portion is striked out. Constant values for different types of Strikeout: 
+							&apos;http://api.openoffice.org/docs/common/ref/com/sun/star/awt/FontStrikeout.html 
+							sPortion = &quot;&lt;span class=&quot;&quot;linethrough&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+						end if 
+							If oContent.CharHeight &gt; fStandardCharHeight THEN 
+							&apos;this portion&apos;s font is larger than standard 
+							&apos; sPortion = &quot;\l&quot; &amp; sPortion &amp; &quot;\l&quot; 
+						end if
+					end if
+				end if 
+				if sLink &lt;&gt; &quot;&quot; then      
+					If Left(sLink,1) =&quot;#&quot; Then &apos;it is an internal link
+						bindx = 	findBookmarkIndex(Mid(sLink,2, Len(sLink) ))
+						If bindx &lt;&gt; -1 then
+							Temp1 =  oBMarksfiles(bindx)						
+							If Temp1&lt;&gt; &quot;&quot; then
+									sPortion = &quot;&lt;a href=&quot;&quot;&quot; &amp; Temp1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/a&gt;&quot;
+							EndIf
+						EndIf	
+					Else		&apos;this portion is a hyperlink
+					sPortion = &quot;&lt;a href=&quot;&quot;&quot; &amp; sLink &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/a&gt;&quot;
+					EndIf
+&apos;					oBMarks = oDoc.getBookmarks 
+&apos;					For i = 0 to oBMarks.Count - 1 
+&apos;						sNam = oBMarks.getByIndex(I).Name
+&apos;						msgbox SLINK &apos; &amp; &quot; &quot; &amp; I &amp; &quot; &quot; &amp; sNam
+&apos;						if InStr(sLink,sNam) &gt; 0 then      &apos; internal link
+&apos;							sPortion = &quot;\q=&quot;&quot;#&quot; &amp; sNam &amp; &quot;&quot;&quot;&quot; &amp; sPortion &amp; &quot;\q&quot; 
+&apos;							exit for
+&apos;						else	&apos;external link
+&apos;							sPortion = &quot;&lt;a href=&quot;&quot;&quot; &amp; sLink &amp; &quot;&quot;&quot;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/a&gt;&quot;
+&apos;						end if 
+&apos;					Next 
+					
+				end if 
+				If oContent.ListId &lt;&gt; &quot;&quot; Then &apos; This portion may be a list
+				End If
+					
+			else						&apos;Empty paragraph
+&apos;				sPortion = &quot;&lt;br /&gt;&quot;
+          sPortion = &quot;&amp;nbsp;&quot; 	&apos;must be &quot;&lt;br /&gt;&quot; but a non-breakable space is request to correct an ADE bug
+			end if
+			 
+			If RubyText &lt;&gt; &quot;&quot; Then
+				sString = sString &amp; &quot;&lt;ruby&gt;&lt;rb&gt;&quot; &amp; sPortion &amp; &quot;&lt;/rb&gt;&lt;rt&gt;&quot; &amp; RubyText &amp; &quot;&lt;/rt&gt;&lt;/ruby&gt;&quot;
+				RubyText = &quot;&quot;
+			Else
+				sString = sString &amp; sPortion
+			End If
+			
+		ElseIf sType = &quot;Ruby&quot; Then
+			&apos;---- ex. &lt;ruby&gt;&lt;rb&gt;??&lt;/rb&gt;&lt;rt&gt;???&lt;/rt&gt;&lt;/ruby&gt;
+			bRuby = TRUE
+			If Val(oContent.RubyAdjust) &gt; 0 Then
+				RubyText = oContent.RubyText
+			End If
+						
+		ElseIf sType = &quot;Footnote&quot; Then  &apos;this portion is a footnote
+			nFoot = nFoot + 1 
+			oFootnote = oContent.Footnote  &apos;get the footnote object 
+ 
+			sFootText = fnFootnoteDirectFormat(oFootnote) &apos;call to retain direct formatting inside footnote (bold...)
+&apos;			sString = sString &amp; &quot;&lt;a href=&quot;&quot;footnote&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;.xhtml#footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&lt;sup&gt;&quot; &amp; nFoot &amp; &quot;&lt;/sup&gt;&lt;/a&gt;&quot;	&amp; &quot;&lt;a id=&quot;&quot;fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&lt;/a&gt;&quot;			
+			sString = sString &amp; &quot;&lt;a href=&quot;&quot;footnotes.xhtml#footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&lt;sup&gt;&quot; &amp; nFoot &amp; &quot;&lt;/sup&gt;&lt;/a&gt;&quot;	&amp; &quot;&lt;a id=&quot;&quot;fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&lt;/a&gt;&quot;			
+
+&apos;*********************
+			Dim oOutputAccess2 As Object
+			Dim oOutputStream2 As Object
+			Dim vOutputData2   As Variant
+			
+			If TraverseSimulate=False Then
+				If Right(sFootText, 4) = &quot;&lt;/p&gt;&quot; Then
+						sFootText= Mid(sFootText,1, Len(sFootText)-4 ) &apos;cut off the last &lt;/p&gt; for nesting the return symbol
+						fnOutputStream.writeString(&quot; &lt;div class=&quot;&quot;footnote&quot;&quot; id=&quot;&quot;footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&quot; &amp; nFoot &amp; &quot;) &quot; &amp; sFootText &amp; &quot; &lt;a href=&quot;&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml#fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt; &lt;strong&gt;&#x21B5;&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;&lt;/div&gt;&quot; &amp; CR)		
+				Else
+						fnOutputStream.writeString(&quot; &lt;div class=&quot;&quot;footnote&quot;&quot; id=&quot;&quot;footnote-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt;&quot; &amp; nFoot &amp; &quot;) &quot; &amp; sFootText &amp; &quot; &lt;a href=&quot;&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml#fnreturn-&quot; &amp; Format(nFoot,&quot;0000&quot;) &amp; &quot;&quot;&quot;&gt; &lt;strong&gt;&#x21B5;&lt;/strong&gt;&lt;/a&gt;&lt;/div&gt;&quot; &amp; CR)
+				EndIf
+			
+			fnOutputStream.flush()
+			EndIf
+
+	
+&apos;*******************
+		
+		ElseIf sType = &quot;Frame&quot; Then
+			oContentEnum = oContent.createContentEnumeration(&quot;com.sun.star.text.TextGraphicObject&quot;)
+			Do While oContentEnum.hasMoreElements()
+				oContent = oContentEnum.nextElement()
+				If oContent.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Then
+&apos;					msgbox &quot;Found a graphic object anchored to or As a character&quot;
+&apos;					Print #3, exportGraphics (MyEpub, oContent)
+				ElseIf oContent.CLSID = &quot;078B7ABA-54FC-457F-8551-6147e776a997&quot; Then &apos; this is a Formula
+					sString = sString &amp; MathHandler (oContent)
+				Else
+&apos;					Print #3, oContent.GetString
+				End If
+			Loop			
+		ElseIf sType = &quot;TextField&quot; Then
+&apos;			beep
+&apos;			Print &quot;TextField&quot;
+		ElseIf sType = &quot;ReferenceMark&quot; Then
+&apos;			beep	
+&apos;			Print &quot;ReferenceMark&quot;
+		ElseIf sType = &quot;Bookmark&quot; Then
+			If TraverseSimulate=True then
+				AddToBookmarksBuffer(oContent.Bookmark.Name)
+			End If
+			sString = sString &amp; &quot;&lt;a id=&quot;&quot;&quot; &amp; oContent.Bookmark.Name &amp; &quot;&quot;&quot;&gt;&lt;/a&gt;&quot;
+		ElseIf sType = &quot;SoftPageBreak&quot; Then
+&apos;			beep
+&apos;			Print &quot;SoftPageBreak&quot;
+		Else 
+			sString = sString &amp; sPortion
+		End If 
+
+	wend 
+	
+	fnExportParagraph=fnExportParaStyle(oParagraph,sString) &apos;Return result, after calling fnExportParaStyle 
+  
+End function 
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Function fnExportParaStyle(oPar As Object, sStr As String) As string
+
+	Dim SplitIncrease As Integer	&apos;counts every page break encountered, used for TOC and content.opf
+	Dim sStyle As String
+	
+   &apos;Indentation 
+&apos;    if oPar.ParaLeftMargin &gt; 100 then      &apos;this paragraph is indented (more than 1 mm) 
+&apos;      sStr = &quot;\t&quot; &amp; sStr &amp; &quot;\t&quot; 
+&apos;   end if 
+&apos;    if oPar.ParaFirstLineIndent &gt; 100 then  &apos;first line indented (more than 1 mm) 
+&apos;      sStr = &quot;&quot; &amp; sStr   &apos;4 non-breaking spaces 
+&apos;   end if 
+
+
+
+&apos;looks for the page breaks 
+
+	SplitIncrease = 0
+	bBreak = 0	&apos;0=no break 1= break before 2= break after
+		If sPrevPageStyle = &quot;&quot; Then sPrevPageStyle = oPar.PageStyleName
+		If oPar.BreakType = 4 And bFirstPage = False  Then 					&apos;PAGE_BEFORE 
+			bBreak = 1
+			SplitIncrease = 1
+		End If
+		
+		If oPar.PageStyleName &lt;&gt; sPrevPageStyle  And bFirstPage = False then	&apos;Change in page style implies page break before paragraph! 
+			bBreak = 1
+			SplitIncrease = 1
+			sPrevPageStyle = oPar.PageStyleName
+		End if
+
+	   	If oPar.BreakType = 5 Then					&apos;PAGE_AFTER 
+		 	bBreak = 2
+		 	SplitIncrease = 0
+		End If
+
+&apos;msgbox oPar.BreakType &amp; cr &amp; bFirstPage &amp; cr &amp; bBreak &amp; cr &amp; opar.string
+   &apos;Headings and styles 
+	sStyle = oPar.ParaStyleName
+&apos;	If oPar.string &lt;&gt; &quot;&quot; Then msgbox &quot;empty paragraph!&quot; 	&apos; empty paragraph?
+	Select Case lcase (sStyle) 
+		Case &quot;heading 1&quot;
+			If iTocLevel &lt; 1 Then iTocLevel = 1
+			iTocCount = iTocCount + 1
+			sTOC (iTocCount, 1) = CleanTags(sStr)
+			sTOC (iTocCount, 2) = 1
+			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sStr = &quot;  &lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h1&gt;&quot; 
+		Case &quot;heading 2&quot;
+			If iTocLevel &lt; 2 Then iTocLevel = 2
+			iTocCount = iTocCount + 1
+			sTOC (iTocCount, 1) = CleanTags(sStr)
+			sTOC (iTocCount, 2) = 2
+			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			sStr = &quot;  &lt;h2 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h2&gt;&quot;
+		Case &quot;heading 3&quot;
+			If iTocLevel &lt; 3 Then iTocLevel = 3
+			iTocCount = iTocCount + 1
+			sTOC (iTocCount, 1) = CleanTags(sStr)
+			sTOC (iTocCount, 2) = 3
+			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			sStr = &quot;  &lt;h3 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h3&gt;&quot;
+		Case &quot;heading 4&quot;
+			If iTocLevel &lt; 4 Then iTocLevel = 4
+			iTocCount = iTocCount + 1 
+			sTOC (iTocCount, 1) = CleanTags(sStr)
+			sTOC (iTocCount, 2) = 4
+			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			sStr = &quot;  &lt;h4 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h4&gt;&quot;
+		Case &quot;heading 5&quot;
+			If iTocLevel &lt; 5 Then iTocLevel = 5
+			iTocCount = iTocCount + 1
+			sTOC (iTocCount, 1) = CleanTags(sStr)
+			sTOC (iTocCount, 2) = 5
+			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sStr = &quot;  &lt;h5 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h5&gt;&quot;
+		Case &quot;heading 6&quot;,&quot;heading 7&quot;,&quot;heading 8&quot;,&quot;heading 9&quot;, &quot;heading 10&quot;
+			If iTocLevel &lt; 6 Then iTocLevel = 6
+			iTocCount = iTocCount + 1
+			sTOC (iTocCount, 1) = CleanTags(sStr)
+			sTOC (iTocCount, 2) = 6
+			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			sStr = &quot; &lt;h6 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h6&gt;&quot;
+		Case &quot;title&quot; 
+			sStr = &quot;  &lt;p class=&quot;&quot;title&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+		Case &quot;subtitle&quot; 
+			sStr = &quot;  &lt;p class=&quot;&quot;subtitle&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+		Case &quot;caption&quot; 
+			sStr = &quot;  &lt;p class=&quot;&quot;caption&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+		Case &quot;quotations&quot; 
+			sStr = &quot;  &lt;p class=&quot;&quot;quotations&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+		Case &quot;marginalia&quot; 
+			sStr = &quot;  &lt;p class=&quot;&quot;marginalia&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+		Case &quot;text body indent&quot; 
+			sStr = &quot;  &lt;p class=&quot;&quot;noindent&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;
+		Case &quot;illustration&quot; 
+			sStr = &quot;  &lt;p class=&quot;&quot;illustration&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;	
+		Case &quot;horizontal line&quot; 
+			sStr = &quot; &lt;hr /&gt; &quot;       &apos;adding previous sStr should not be necessary! 
+			oPar.ParaStyleName=&quot;Standard&quot;   &apos;70%: just because I like it so. Change it if you want! 
+		Case &quot;preformatted text&quot; 
+			sStr = &quot; &lt;pre&gt;&quot; &amp; sStr &amp; &quot;&lt;/pre&gt;&quot;
+		Case Else
+			If Left (lcase (sStyle),4) = &quot;w2e_&quot; Then
+				sStr = PersonalStyleHandler (oPar) &amp; sStr &amp; &quot;&lt;/p&gt;&quot; 
+			ElseIf Left (sStr,4) &lt;&gt; &quot;&lt;div&quot; and  Left (sStr,6) &lt;&gt; &quot;  &lt;div&quot; Then
+				sStr = &quot;  &lt;p&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;&apos; &amp; CR
+			End If
+	End Select 
+
+	if oPar.ParaAdjust = 3 then            &apos;this paragraph is centered 
+		AddClass (sStr, &quot;center&quot;)
+    elseif oPar.ParaAdjust = 1 then         &apos;this paragraph is right justified 
+    	AddClass (sStr, &quot;right&quot;)
+	end if 
+    
+&apos;Top and bottom margins 
+    if oPar.ParaTopMargin &gt; 100 then      &apos;this paragraph has space above (more than 1 mm) 
+&apos;      sStr = Chr(10) &amp; sStr 
+	end if 
+    if oPar.ParaBottomMargin &gt; 100 then      &apos;this paragraph has space below (more than 1 mm) 
+&apos;      sStr = sStr &amp; Chr(10) 
+	end if 
+
+
+	fnExportParaStyle = sStr    &apos;Return result 
+
+End function 
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Function fnSmallCaps( sStr As String ) As String
+&apos;this function formats only lowercase letters As SmallCaps. 
+	Dim i As Integer 
+	Dim c As String 
+	Dim a As Integer
+	Dim scTrue as Boolean
+
+	cResult = &quot;&quot; 
+	
+	For i = 1 To Len( sStr )
+		c = Mid( sStr, i, 1 ) 
+		Select Case c
+		Case &quot;&lt;&quot;
+		&apos;is it a tag starting with &lt; ?  Jump to &gt;
+			Do Until c = &quot;&gt;&quot;
+				cResult = cResult &amp; c
+				i = i + 1
+				c = Mid( sStr, i, 1 ) 	
+			Loop
+  Case &quot;&amp;&quot;	
+		&apos;is it a &amp; charachter? Jump to ;
+			Do Until c = &quot;;&quot;
+				cResult = cResult &amp; c
+				i = i + 1
+				c = Mid( sStr, i, 1 ) 	
+			Loop
+		Case &quot;a&quot; To &quot;z&quot;,&quot;à&quot; To &quot;ÿ&quot;,&quot;ā&quot;,&quot;ă&quot;,&quot;ą&quot;,&quot;ć&quot;,&quot;ĉ&quot;,&quot;ċ&quot;,&quot;č&quot;,&quot;ď&quot;,&quot;đ&quot;,&quot;ē&quot;,&quot;ĕ&quot;,&quot;ė&quot;,&quot;ę&quot;,&quot;ě&quot;,&quot;ĝ&quot;,&quot;ğ&quot;,&quot;ġ&quot;,&quot;ģ&quot;,&quot;ĥ&quot;,&quot;ħ&quot;,&quot;ĩ&quot;,&quot;ī&quot;,&quot;ĭ&quot;,&quot;į&quot;,&quot;ı&quot;,&quot;ĳ&quot;,&quot;ĵ&quot;,&quot;ķ&quot;,&quot;ĸ&quot;,&quot;ĺ&quot;,&quot;ļ&quot;,&quot;ľ&quot;,&quot;ŀ&quot;,&quot;ł&quot;,&quot;ń&quot;,&quot;ņ&quot;,&quot;ň&quot;,&quot;ŉ&quot;,&quot;ŋ&quot;,&quot;ō&quot;,&quot;ŏ&quot;,&quot;ő&quot;,&quot;œ&quot;,&quot;ŕ&quot;,&quot;ŗ&quot;,&quot;ř&quot;,&quot;ś&quot;,&quot;ŝ&quot;,&quot;ş&quot;,&quot;š&quot;,&quot;ţ&quot;,&quot;ť&quot;,&quot;ŧ&quot;,&quot;ũ&quot;,&quot;ū&quot;,&quot;ŭ&quot;,&quot;ů&quot;,&quot;ű&quot;,&quot;ų&quot;,&quot;ŵ&quot;,&quot;ŷ&quot;,&quot;ź&quot;,&quot;ż&quot;,&quot;ž&quot;,&quot;ſ&quot;,&quot;ƀ&quot;,&quot;ƃ&quot;,&quot;ƅ&quot;,&quot;ƈ&quot;,&quot;ƙ&quot;,&quot;ƞ&quot;,&quot;ơ&quot;,&quot;ƣ&quot;,&quot;ƥ&quot;,&quot;ƨ&quot;,&quot;ƪ&quot;,&quot;ƫ&quot;,&quot;ƭ&quot;,&quot;ư&quot;,&quot;Ʋ&quot;,&quot;ƴ&quot;,&quot;ƶ&quot;,&quot;ƹ&quot;,&quot;ƺ&quot;,&quot;ƽ&quot;,&quot;ƾ&quot;,&quot;ƿ&quot;,&quot;ǆ&quot;,&quot;ǉ&quot;,&quot;ǌ&quot;,&quot;ǎ&quot;,&quot;ǐ&quot;,&quot;ǒ&quot;,&quot;ǔ&quot;,&quot;ǖ&quot;,&quot;ǘ&quot;,&quot;ǚ&quot;,&quot;ǜ&quot;,&quot;ǟ&quot;,&quot;ǡ&quot;,&quot;ǣ&quot;,&quot;ǥ&quot;,&quot;ǧ&quot;,&quot;ǩ&quot;,&quot;ǫ&quot;,&quot;ǯ&quot;,&quot;ǳ&quot;,&quot;ǵ&quot;,&quot;ǹ&quot;,&quot;ǻ&quot;,&quot;ǽ&quot;,&quot;ǿ&quot;,&quot;ȁ&quot;,&quot;ȃ&quot;,&quot;ȅ&quot;,&quot;ȇ&quot;,&quot;ȉ&quot;,&quot;ȋ&quot;,&quot;ȍ&quot;,&quot;ȏ&quot;,&quot;ȑ&quot;,&quot;ȓ&quot;,&quot;ȕ&quot;,&quot;ȗ&quot;,&quot;ș&quot;,&quot;ț&quot;,&quot;ȝ&quot;,&quot;ȟ&quot;,&quot;ȣ&quot;,&quot;ȥ&quot;,&quot;ȧ&quot;,&quot;ȩ&quot;,&quot;ȫ&quot;,&quot;ȭ&quot;,&quot;ȯ&quot;,&quot;ȱ&quot;,&quot;ȳ&quot;
+		&apos;is it a lowercase letter?
+			c = &quot; &lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot; &amp; Ucase (c) &amp; &quot;&lt;/span&gt;&quot;
+		End Select
+		cResult = cResult &amp; c
+	Next 
+
+	&apos;Remove redundant tags
+	Do While InStr(cResult, &quot; &lt;/span&gt;&lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot;)&gt;0
+		Mid (cResult, InStr(cResult, &quot;&lt;/span&gt;&lt;span class=&quot;&quot;fakesmallcaps&quot;&quot;&gt;&quot;), 35, &quot;&quot;)
+&apos;	Do While InStr(cResult, &quot;&lt;/small&gt;&lt;small&gt;&quot;)&gt;0
+&apos;		Mid (cResult, InStr(cResult, &quot;&lt;/small&gt;&lt;small&gt;&quot;), 15, &quot;&quot;)
+	Loop
+
+	fnSmallCaps() = cResult
+	
+
+End Function 
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Function fnFootnoteDirectFormat(oFtn As object) As String 
+
+  Dim oParEnum  As Object      &apos;Enumerator used to enumerate the footnote&apos;s paragraphs 
+  Dim oPar As Object         &apos;The enumerated paragraph 
+  Dim oSectionEnum As Object   &apos;Enumerator used to enumerate the paragraph sections 
+  Dim oSection As Object      &apos;The enumerated section 
+  Dim sTxt As String           &apos;Contains the edited footnote text 
+  Dim sPortion As string      &apos;Part of the text being worked on 
+
+  oParEnum = oFtn.getText().createEnumeration() 
+  sTxt = &quot;&quot; 
+  Do While oParEnum.hasMoreElements() 
+    oPar = oParEnum.nextElement() 
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then 
+      oSectionEnum = oPar.createEnumeration() 
+   &apos;   If sTxt &lt;&gt; &quot;&quot;   Then         &apos;Starting footnote&apos;s second paragraph 
+         sTxt = sTxt &amp; Chr(10) &amp; &quot;  &lt;p class=&quot;&quot;fnparagraph&quot;&quot;&gt;&quot;    &apos;on new line 
+    &apos;  End If 
+      Do While oSectionEnum.hasMoreElements() 
+        oSection = oSectionEnum.nextElement() 
+        sPortion = oSection.GetString 
+        If oSection.TextPortionType = &quot;Text&quot; Then 
+           If oSection.CharWeight &gt; 105 THEN 
+             sPortion = &quot;&lt;strong&gt;&quot; &amp; sPortion &amp; &quot;&lt;/strong&gt;&quot; 
+           end if    
+           if oSection.CharPosture = com.sun.star.awt.FontSlant.ITALIC THEN 
+             sPortion = &quot;&lt;em&gt;&quot; &amp; sPortion &amp; &quot;&lt;/em&gt;&quot; 
+           end if 
+           if oSection.CharUnderline &gt; 0 THEN 
+             sPortion = &quot;&lt;u&gt;&quot; &amp; sPortion &amp; &quot;&lt;/u&gt;&quot; 
+           end if 
+			if oSection.CharEscapement &lt; 0 THEN 			&apos;this portion is formatted in subscript 
+				sPortion = &quot;&lt;sub&gt;&quot; &amp; sPortion &amp; &quot;&lt;/sub&gt;&quot; 
+			End If
+			If oSection.CharEscapement &gt; 0 THEN		&apos;this portion is formatted in superscript 
+				sPortion = &quot;&lt;sup&gt;&quot; &amp; sPortion &amp; &quot;&lt;/sup&gt;&quot; 
+			End If
+        End If 
+          sTxt = sTxt &amp; sPortion
+      Loop 
+      sTxt = sTxt &amp; &quot;&amp;nbsp;&lt;/p&gt;&quot;
+    End If 
+  Loop 
+  fnFootnoteDirectFormat() = sTxt 
+end function 
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Function PersonalStyleHandler (oPar as Object) As String
+&apos;handles the personal styles (starting with w2e_) and add the style to the CSS if not yet present
+	Dim i, NewDim, LastStyle as Integer
+	Dim myParaStyleName as String
+	Dim StileIsNotInTheMatrix As Boolean
+	StileIsNotInTheMatrix = True
+	myParaStyleName = Mid(oPar.ParaStyleName,5, Len(oPar.ParaStyleName))
+	
+	&apos;count the memorized styles
+	For LastStyle = 1 to UBound(StyleList)
+		If StyleList(LastStyle).ParaStyleName = &quot;&quot; Then	 Exit For
+		If StyleList(LastStyle).ParaStyleName = myParaStyleName Then StileIsNotInTheMatrix = False
+	Next LastStyle
+	
+	If StileIsNotInTheMatrix Then 
+		StyleList(LastStyle).ParaStyleName = myParaStyleName
+		StyleList(LastStyle).CharColor = oPar.CharColor
+		StyleList(LastStyle).CharHeight = oPar.CharHeight
+&apos;		StyleList(LastStyle).CharWeight = oPar.CharWeight
+&apos;		StyleList(LastStyle).CharPosture = oPar.CharPosture
+&apos;		StyleList(LastStyle).CharStrikeout = oPar.CharStrikeout
+&apos;		StyleList(LastStyle).CharUnderline = oPar.CharUnderline
+&apos;		StyleList(LastStyle).DropCapFormatCount = oPar.DropCapFormat.Count
+&apos;		StyleList(LastStyle).DropCapFormatDistance = oPar.DropCapFormat.Distance
+&apos;		StyleList(LastStyle).DropCapFormatLines = oPar.DropCapFormat.Lines
+&apos;		StyleList(LastStyle).DropCapWholeWord = oPar.DropCapWholeWord
+		StyleList(LastStyle).ParaAdjust = oPar.ParaAdjust
+		StyleList(LastStyle).ParaBackColor = oPar.ParaBackColor
+		StyleList(LastStyle).ParaLeftMargin = oPar.ParaLeftMargin
+		StyleList(LastStyle).ParaRightMargin = oPar.ParaRightMargin
+		StyleList(LastStyle).ParaTopMargin = oPar.ParaTopMargin
+		StyleList(LastStyle).ParaBottomMargin = oPar.ParaBottomMargin
+		StyleList(LastStyle).ParaFirstLineIndent = oPar.ParaFirstLineIndent
+		StyleList(LastStyle).LeftBorder = oPar.LeftBorder.OuterLineWidth
+		StyleList(LastStyle).RightBorder = oPar.RightBorder.OuterLineWidth
+		StyleList(LastStyle).TopBorder = oPar.TopBorder.OuterLineWidth
+		StyleList(LastStyle).BottomBorder = oPar.BottomBorder.OuterLineWidth
+	End If
+
+	
+	PersonalStyleHandler =	&quot;  &lt;p class=&quot;&quot;&quot; &amp; myParaStyleName &amp; &quot;&quot;&quot;&gt;&quot;		
+End Function
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Function fnTablesDirectFormat(oCel As object) As String 
+
+  Dim oParEnum  As Object      &apos;Enumerator used to enumerate the footnote&apos;s paragraphs 
+  Dim oPar As Object         &apos;The enumerated paragraph 
+  Dim oSectionEnum As Object   &apos;Enumerator used to enumerate the paragraph sections 
+  Dim oSection As Object      &apos;The enumerated section 
+  Dim sTxt As String           &apos;Contains the edited footnote text 
+  Dim sPortion As string      &apos;Part of the text being worked on 
+
+  oParEnum = oCel.getText().createEnumeration() 
+  sTxt = &quot;&quot; 
+  Do While oParEnum.hasMoreElements() 
+    oPar = oParEnum.nextElement() 
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then 
+      oSectionEnum = oPar.createEnumeration() 
+      If sTxt &lt;&gt; &quot;&quot;   Then         &apos;Starting footnote&apos;s second paragraph 
+         sTxt = sTxt &amp; Chr(10)      &apos;on new line 
+      End If 
+      Do While oSectionEnum.hasMoreElements() 
+        oSection = oSectionEnum.nextElement() 
+        sPortion = oSection.GetString 
+        If oSection.TextPortionType = &quot;Text&quot; Then 
+           If oSection.CharWeight &gt; 105 THEN 
+           	 &apos;sPortion = &quot;&lt;span class=&apos;bold&apos;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+             &apos;sPortion = &quot;&lt;b&gt;&quot; &amp; sPortion &amp; &quot;&lt;/b&gt;&quot; 
+             sPortion = &quot;&lt;strong&gt;&quot; &amp; sPortion &amp; &quot;&lt;/strong&gt;&quot; 
+           end if    
+           if oSection.CharPosture = com.sun.star.awt.FontSlant.ITALIC THEN 
+             &apos;sPortion = &quot;&lt;span class=&apos;italic&apos;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+             &apos;sPortion = &quot;&lt;i&gt;&quot; &amp; sPortion &amp; &quot;&lt;/i&gt;&quot; 
+             sPortion = &quot;&lt;em&gt;&quot; &amp; sPortion &amp; &quot;&lt;/em&gt;&quot; 
+           end if 
+           if oSection.CharUnderline &gt; 0 THEN 
+             sPortion = &quot; &lt;span class=&apos;underline&apos;&gt;&quot; &amp; sPortion &amp; &quot;&lt;/span&gt;&quot; 
+             &apos;sPortion = &quot;&lt;u&gt;&quot; &amp; sPortion &amp; &quot;&lt;/u&gt;&quot; 
+           end if 
+           sTxt = sTxt &amp; sPortion 
+        End If 
+      Loop 
+    End If 
+  Loop 
+  fnTablesDirectFormat() = sTxt 
+end function 
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Function findBookmarkIndex(inName As String)
+
+	findBookmarkIndex() = -1
+	For i = 0 to oBMarks.Count - 1 
+			sNam = oBMarks.getByIndex(I).Name
+			If sNam = inName Then
+				findBookmarkIndex() = i 
+				Exit For
+			End If
+
+	Next 
+
+End Function
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Sub FlushBookmarksBuffer(filename As String)
+
+	Dim iBkMark As integer	
+	For i = 0 to UBound(bkMarksCurPageBuffer) - 1 
+			If bkMarksCurPageBuffer(i)&lt;&gt;&quot;&quot; Then
+				iBkMark=findBookmarkIndex(bkMarksCurPageBuffer(i))
+				If iBkMark &gt; -1 Then &apos; Avoid crash in case a Bookmark is not found
+					oBMarksfiles(iBkMark)=filename &amp; &quot;#&quot; &amp; bkMarksCurPageBuffer(i)
+				Endif
+			Else
+				Exit For
+			Endif
+	Next 
+	
+End Sub
+
+&apos;_______________________________________________________
+
+Sub AddToBookmarksBuffer(bname As String) 
+
+
+	For i = 0 to UBound(bkMarksCurPageBuffer) - 1 
+			If bkMarksCurPageBuffer(i)=&quot;&quot; Then
+				bkMarksCurPageBuffer(i)=bname
+				Exit For
+			Endif
+
+	Next 
+
+End Sub
+&apos;_______________________________________________________________________________________________________________________________
+Function fnExportTable(oTable As Object) As String
+
+	Dim mCellnames
+	Dim nMaxCols
+	Dim sCellName
+	Dim nCol
+	Dim nRows
+	Dim bHeading
+	Dim sReturn
+	Dim i, j As integer
+	Dim tableWidth, tableHeight As Long
+	Dim pageWidth, pageHeight, LeftMargin, RigtMargin As Long
+	
+	PageWidth = ThisComponent.StyleFamilies.getByName(&quot;PageStyles&quot;).getByIndex(1).Width
+	LeftMargin = ThisComponent.StyleFamilies.getByName(&quot;PageStyles&quot;).getByIndex(1).LeftMargin
+	RightMargin = ThisComponent.StyleFamilies.getByName(&quot;PageStyles&quot;).getByIndex(1).RightMargin
+	PageWidth = PageWidth - LeftMargin - RightMargin
+	tableWidth = oTable.Width
+	tableWidth = int (tableWidth/PageWidth*100)
+	If tableWidth &gt;= 100 Then tableWidth = 100
+
+        mCellnames = oTable.getCellNames
+        nMaxCols = 0
+        for i = 0 to uBound(mCellNames)
+                sCellName = mCellNames(i)
+                nCol = 0
+                for j = 1 to len(sCellName)
+                        ch = mid(sCellName, j, 1)
+                        select case ch
+                        case &quot;A&quot; to &quot;Z&quot;
+                                nCol = nCol * 26 + (asc(ch) - asc(&quot;A&quot;))
+                        case &quot;0&quot; to &quot;9&quot;
+                                &apos;nRow = val(mid(sCellName, j)) - 1
+                                exit for
+                        end select
+                next
+                if nCol &gt; nMaxCols then nMaxCols = nCol
+        next
+        
+        nRows = oTable.rows.count - 1
+         
+&apos;		if nMaxCols = 0 then
+&apos;			for i = 0 to nRows
+&apos;				oCell = oTable.getCellByPosition(0, i)
+&apos;				oCellEnum = oCell.createEnumeration
+&apos;				while oCellEnum.hasMoreElements
+&apos;					subParagraph(oCellEnum.nextElement)
+&apos;				wend
+&apos;			next
+&apos;			exit Function
+&apos;		end if
+
+
+        dim mCells(nRows, nMaxCols)
+
+        &apos;for i = 0 to nRows
+        &apos;       for j = 0 to nmaxCols - 1
+        &apos;               mCells(i, j) = &quot;&quot;
+        &apos;       next
+        &apos;next
+
+        for i = 0 to uBound(mCellNames)
+                sCellName = mCellNames(i)
+                nCol = 0
+                for j = 1 to len(sCellName)
+                        ch = mid(sCellName, j, 1)
+                        select case ch
+                        case &quot;A&quot; to &quot;Z&quot;
+                                nCol = nCol * 26 + (asc(ch) - asc(&quot;A&quot;))
+                        case &quot;0&quot; to &quot;9&quot;
+                                nRow = val(mid(sCellName, j)) - 1
+                                exit for
+                        end select
+                next
+                oCell = oTable.getCellByName(sCellName)
+                sCell = &quot; &quot;
+                oCellEnum = oCell.createEnumeration
+                while oCellEnum.hasMoreElements
+                        oTextElement = oCellEnum.nextElement
+                        if sCell &lt;&gt; &quot; &quot; then
+                                sCell = sCell &amp; sNEWLINE
+                        end if
+
+                        if oTextElement.ParaStyleName = &quot;Table Heading&quot; then
+                                sSep = sTABLEHEADSEP
+                        else
+                                sSep = sTABLESEP
+                        end if
+
+                        if oTextElement.NumberingIsNumber then
+                                if InStr(&quot;0123456789&quot;, left(oTextElement.string, 1)) &gt; 0 then
+                                        sCell = sCell &amp; str(val(oTextElement.string))
+                                else
+                                        sCell = sCell &amp; &quot;* &quot;
+                                end if
+                        end if
+
+                        oPortionEnum =  oTextElement.createEnumeration
+                        while oPortionEnum.hasMoreElements
+                                oTextPortion = oPortionEnum.nextElement
+                                sCell = sCell &amp; fnTablesDirectFormat (oTextPortion)
+                                &apos;sCell = sCell &amp; oTextPortion.string
+                                &apos;msgbox 
+                        wend
+                wend
+                sCell = trim(sCell)
+                select case oTextElement.paraAdjust
+                case com.sun.star.style.ParagraphAdjust.CENTER
+                        sCell = &quot;  &lt;p class=&apos;center&apos;&gt;&quot; &amp; sCell &amp; &quot;&lt;/p&gt;&quot;
+                case com.sun.star.style.ParagraphAdjust.RIGHT
+                        sCell = &quot;  &lt;p class=&apos;right&apos;&gt;&quot; &amp; sCell &amp; &quot;&lt;/p&gt;&quot;
+                end select
+                mCells(nRow, nCol) = sCell
+        next
+
+      
+sReturn = &quot; &lt;table border=&quot;&quot;1&quot;&quot; cellpadding=&quot;&quot;1&quot;&quot; cellspacing=&quot;&quot;2&quot;&quot; rules=&quot;&quot;all&quot;&quot; width=&quot;&quot;&quot; &amp; tableWidth &amp; &quot;%&quot;&quot;&gt;&quot; &amp; CR
+
+For i = 0 to nRows
+	sReturn = sReturn &amp; &quot;  &lt;tr&gt;&quot; &amp; CR
+	For j = 0 to nMaxCols
+&apos;		mCells (i,j) = fnExportParagraph (mCells (i,j))
+		
+&apos;			mCells (i,j) = Replace (mCells (i,j), &quot;&amp;&quot;, &quot;&amp;#38;&quot;)
+&apos;			mCells (i,j) = Replace (mCells (i,j), &quot;&lt;&quot;, &quot;&amp;lt;&quot;)
+&apos;			mCells (i,j) = Replace (mCells (i,j), &quot;&gt;&quot;, &quot;&amp;gt;&quot;)
+&apos;			mCells (i,j) = Replace (mCells (i,j), &quot;&apos;&quot;, &quot;&amp;apos;&quot;)
+&apos;			mCells (i,j) = Replace (mCells (i,j), &quot;&quot;&quot;&quot;, &quot;&amp;quot;&quot;)
+			
+		sReturn = sReturn &amp; &quot;   &lt;td&gt;&quot; &amp; mCells (i,j) &amp; &quot;  &lt;/td&gt;&quot; &amp; CR 
+	Next j
+	sReturn = sReturn &amp; &quot;  &lt;/tr&gt;&quot; &amp; CR
+Next i
+sReturn = sReturn &amp; &quot; &lt;/table&gt;&quot;
+
+fnExportTable() = sReturn
+
+exit Function
+
+        subAddString(sTABLESTART &amp; sLineEnd)
+        for i = 0 to nRows
+                sRow = &quot;&quot;
+                sRow = sRow &amp; sTableSep
+                bHeading = false
+                for j = 0 to nmaxCols
+                        if mCells(i, j) &lt;&gt; &quot;&quot; then
+                                if j = 0 and InStr(mCells(i, j), chr(10)) = 0 then
+                                        bHeading = true
+                                else
+                                        bHeading = false
+                                end if
+                        end if
+                        sRow = sRow &amp; mCells(i, j) &amp; sTableSep
+                next
+                if bHeading then
+                        if i = 0 then
+                                sRow = string(6, sHEADCHAR) &amp; mCells(i, 0) &amp; string(6, sHEADCHAR) &amp; sLineEnd &amp; sLineEnd
+                        else
+                                sRow = string(5, sHEADCHAR) &amp; mCells(i, 0) &amp; string(5, sHEADCHAR) &amp; sLineEnd &amp; sLineEnd
+                        end if
+                else
+                        sRow = sRow &amp; sLineEnd
+                end if
+
+                subAddString(sTABLEROWSTART &amp; sRow &amp; sTABLEROWSEP &amp; sLineEnd)
+        next
+        subAddString(sTABLEEND &amp; sLineEnd)
+
+        subAddString(sLineEnd)
+end Function
+
+</script:module>

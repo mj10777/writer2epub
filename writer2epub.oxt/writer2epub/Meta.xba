@@ -1,0 +1,1310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Meta" script:language="StarBasic">Option Explicit
+
+&apos; Medatadata Handling routines
+&apos;
+&apos; Code parts by Luca Conte
+
+Dim dlg As Object
+Dim ctrl as Object
+Dim model as Object
+Dim LangArray (219,2)
+
+
+Sub MetaMain
+
+&apos;On Error Resume Next
+
+	InitLocal					&apos;set language strings
+	initLangArray				&apos;creates list of available languages for metadata
+	LoadMyLibraries				&apos;load libraries
+
+	
+   	If ThisComponent.hasLocation=False Then 
+		MsgBox (saveBeforeMSG,16,sMyAppName) 
+		Exit Sub
+	End If
+    initRegistry				&apos;Load or create the registry to store pref values
+    DialogLibraries.LoadLibrary(sMyAppName)
+    dlg=CreateUnoDialog(DialogLibraries.writer2epub.MetaDLG)
+	
+	ListLanguages				&apos;populates the language drop down menu
+	ListFonts
+&apos;-------- Set logo and version string ---------------------
+	
+	Dlg.getControl(&quot;VersionLabel2&quot;).text = &quot;Version &quot; &amp; sVersion &amp; &quot; &quot;	
+   	Dlg.getControl(&quot;Logo&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/Writer2Epub-200x120.jpg&quot;)
+   	Dlg.getControl(&quot;Donate&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/donate_btn.gif&quot;)
+   	
+&apos;-------- Get the hex color and transform it in decimal-------
+
+	Dim xRGB As String
+	xRGB = getMetaValue (&quot;BackgroundColor&quot;)	
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = Cint (&quot;&amp;H&quot; &amp; (Mid(xRGB, 1,2))
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = Cint (&quot;&amp;H&quot; &amp; (Mid(xRGB, 3,2))
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = Cint (&quot;&amp;H&quot; &amp; (Mid(xRGB, 5,2))
+	SetCoverBackgroundColor
+	
+&apos;--------- Set the cover type radio buttons -------------------
+
+	Select Case getMetaValue (&quot;CoverType&quot;)
+		Case &quot;First&quot;
+			Dlg.getControl(&quot;RB_First&quot;).Model.State = 1
+		Case &quot;File&quot;
+			Dlg.getControl(&quot;RB_File&quot;).Model.State = 1
+		Case &quot;None&quot;
+			Dlg.getControl(&quot;RB_None&quot;).Model.State = 1
+	End Select
+	
+&apos;--------- let&apos;s load the metadata from file, if available ------
+			
+    CustomProps2DLG
+    CheckFields
+    DisableJPGconversion
+    DisableIndexName
+    	
+    Select Case Dlg.Execute()     
+    Case 1
+        saveMeta
+    Case 0 
+        Exit Sub
+    End Select
+    dlg.dispose()
+
+End Sub
+
+&apos;================================================================
+&apos;=========================== end main ===========================
+&apos;================================================================
+
+
+
+Function coverAvailableInFirstPage
+msgbox &quot;not used&quot;
+    dim firstChapterEnum as Object
+    dim FirstChapter as Object
+    Dim contenutoenum as object
+    dim contenuto as object
+    coverAvailableInFirstPage = false
+    firstChapterEnum = ThisComponent.getText().createEnumeration()
+    If firstChapterEnum.hasMoreElements() then
+      FirstChapter = firstChapterEnum.nextElement()
+      If FirstChapter.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then  &apos;---- This manages the paragraphs
+        contenutoenum = FirstChapter.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+        Do While contenutoenum.hasMoreElements()
+          contenuto = contenutoenum.nextElement()
+          If contenuto.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Then
+              coverAvailableInFirstPage = true
+              InizioCover=contenuto.GraphicURL
+          End If
+        Loop
+      end if
+    end if
+End Function
+
+
+Sub GetFirstImage()
+&apos;*********** NEEDS IMPROVEMENT!! **************
+&apos;***** not always the first image *************
+&apos;***** of the document is the first ***********
+&apos;****** displayed image ***********************
+&apos;-------- Get first image from document and display it in dialog&apos;s frame --------
+
+	Dim sPicGraphicUrl As String
+	Dim asPicGraphicUrl() As String
+	Dim mFiles() As String
+	Dim oPicStorage As Object
+	Dim oProvider As Object
+	Dim J as Integer
+	
+	&apos;get the first image in the document 
+	sPicGraphicUrl = ThisComponent.GraphicObjects.getByIndex(0).graphicUrl
+	&apos; get the picture name (comes without the extension)
+	asPicGraphicUrl = split(sPicGraphicUrl,&quot;:&quot;) 
+	
+	if asPicGraphicUrl(0) &lt;&gt; &quot;vnd.sun.star.GraphicObject&quot; then
+		MsgBox &quot;The first image in the document is a linked image, you cannot use it as cover picture.&quot;
+		exit sub
+	endif
+
+
+	sPicGraphicUrl = asPicGraphicUrl(1) 	
+	&apos;get the storage of the pic 
+	oPicStorage = ThisComponent.DocumentStorage.getByName(&quot;Pictures&quot;)
+	&apos; so search all files in pictures folder for the current picture ...
+	mFiles() = oPicStorage.getElementNames
+	For j = 0 to uBound(mFiles())
+		If InStr(1, mFiles(j), sPicGraphicUrl, 0) Then
+			&apos; create new name with extension ...
+			sPicGraphicUrl = mFiles(j)
+&apos;			sGraphicName = CleanPictureName(oPicStorage.getByIndex(0).getName() &amp; Mid(mFiles(j), Len(sGraphicURL)+1, Len(mFiles(j)))
+			Exit For
+		EndIf
+	Next j
+
+	oPicStorage = ThisComponent.DocumentStorage.getByName(&quot;Pictures&quot;).getByName(sPicGraphicUrl) 
+
+	&apos;now insert the picture 
+	oProvider = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;) 
+	Dim oPropsIN(1)as new com.sun.star.beans.PropertyValue 
+	oPropsIN(0).Name  = &quot;InputStream&quot; 
+	oPropsIN(0).Value = oPicStorage.InputStream 
+	Dlg.getControl(&quot;MetaCover&quot;).Model.Graphic = oProvider.queryGraphic(oPropsIN()) 
+
+End Sub
+
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub GetMetadata
+&apos;On Error Goto ErrorHandler
+
+&apos;------ GET METADATA ----------
+
+
+    Dim sPath   As String
+    Dim sStr    As String
+    Dim p, i, c, j,startIndx,endIndx     As Integer
+    Dim bSpaceClean As Boolean
+    Dim MetaY As String
+    Dim sMeta (8) As String &apos;9 (0..8): meta(4) and not meta (3) parts with prefix (1) and suffix(1)
+    Dim sElement As String
+    Dim sPattern As String
+
+
+    If NOT GlobalScope.BasicLibraries.isLibraryLoaded( &quot;Tools&quot; ) Then 
+        GlobalScope.BasicLibraries.loadLibrary( &quot;Tools&quot; )
+    End If
+        
+    sPath = GetFileNameWithoutExtension(ThisComponent.getURL(), &quot;/&quot;) 
+
+    MetaLanguage = GetLanguage        &apos;gets OOo interface language in use
+        
+&apos;    sPattern uses:
+&apos;    A = Author
+&apos;    T = Title
+&apos;    P = Editor
+&apos;    Y = Year
+&apos;    Change this As you like:
+
+&apos;    sPattern = &quot;A - T - P (Y)&quot;
+
+    sPattern =  myPrefs.getPropertyValue(&quot;Pattern&quot;)
+    c = -1
+    For i = 1 to len (sPattern)
+        sElement = mid (sPattern, i, 1)
+        If isMetaField(sElement) Then
+            c=c+1
+            sMeta(c)=sElement
+            c=c+1
+        Else
+            If c=-1 Then
+                c=0
+            End If 
+            
+            sMeta(c)=sMeta(c)&amp;sElement    
+        End If
+    Next i
+    sStr = ConvertFromUrl(sPath)
+    c=0
+    
+    For j=0 to UBound(sMeta)
+     If sMeta(j) &lt;&gt; &quot;&quot; Then
+        If isMetaField(sMeta(j)) Then
+        
+            If j=0 Then &apos;is a Meta field at the beginning without a prefix
+                    endIndx=InStr(sStr, sMeta(j+1))
+                    If endIndx=0 Then
+                        endIndx=Len(sStr)+1
+                    EndIf
+                    sElement=Left(sStr,endIndx-1)
+                    c=Len(sElement)
+            ElseIf j=UBound(sMeta) OR sMeta(j+1)=&quot;&quot; Then &apos;is a Meta field at the end without a suffix    
+                    sElement=Mid(sStr,c,len(sStr))
+            Else &apos;is a Meta field in the middle between two separators pattern    
+                    endIndx=InStr(c,sStr, sMeta(j+1))
+                    sElement=Mid(sStr,c,endIndx-c)
+                    c=c+Len(sElement)-1
+            End If
+            Select Case sMeta(j)
+            Case &quot;A&quot;
+                MetaAuthor = sElement
+                ctrl=Dlg.GetControl(&quot;w2e_MetaAuthor&quot;)
+                ctrl.Text=sElement
+            Case &quot;T&quot;
+                MetaTitle = sElement
+                ctrl=Dlg.GetControl(&quot;w2e_MetaTitle&quot;)
+                ctrl.Text=sElement
+            Case &quot;P&quot;
+                MetaPublisher = sElement
+                ctrl=Dlg.GetControl(&quot;w2e_MetaPublisher&quot;)
+                ctrl.Text=sElement
+            Case &quot;Y&quot;
+                MetaY = sElement
+                ctrl=Dlg.GetControl(&quot;w2e_MetaPublishingDate&quot;)
+                ctrl.Text=sElement
+            End Select
+        Else
+                c=c+len(sMeta(j))+1
+        End If
+     End If
+    Next j
+    
+    Dlg.GetControl(&quot;w2e_MetaLanguage&quot;).Text = Trancodelanguage2label(GetLanguage)
+    
+ Exit Sub
+ ErrorHandler: 
+&apos;     SetMetaCustomProp(&quot;w2e_MetaTitle&quot;,&quot;!!!ERROR!!!&quot;,True)
+     MetaAuthor = &quot;&quot;
+     MetaTitle = &quot;&quot;
+     MetaPublisher = &quot;&quot;
+     MetaY = &quot;&quot;
+End Sub
+
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Function isMetaField(f As String)
+    isMetaField=false
+    If  f = &quot;A&quot; Or f = &quot;T&quot; Or f = &quot;P&quot; Or f = &quot;Y&quot;  Then
+        isMetaField=true
+    End If
+End Function
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Sub saveMeta
+
+    DLG2CustomProps
+    If (ThisComponent.isModified) and (ThisComponent.hasLocation And (Not ThisComponent.isReadOnly)) Then     
+        ThisComponent.store()
+    End If
+
+    If myPrefs.getPropertyValue(&quot;HideMessages&quot;) = &quot;False&quot; then
+&apos;        MsgBox &quot;Metadata has been saved as well as the original document&quot;
+    End If         
+    Dlg.endExecute()
+    
+End Sub
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Sub CustomProps2DLG
+
+	Dim metaProp As New com.sun.star.beans.PropertyValue
+	Dim UDP, PV, ctrl, ctrls As Object
+	Dim MetaPropKey, pvalue As String
+	Dim AllEmpty as Boolean
+	Dim I As Integer
+	
+	UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
+	PV = UDP.getPropertyValues() 
+	AllEmpty = True
+&apos;------- Metadata ----------
+	For I = 0 to uBound(PV) 
+		If Left(PV(i).Name, Len(MetaPropKeyPrefix)) = MetaPropKeyPrefix Then &apos;is a meta custom property
+			ctrl=Dlg.getControl(PV(i).Name)	
+			If not IsNull(ctrl) and (not IsEmpty(PV(i).Value)) Then
+				AllEmpty = False
+				If ctrl.ImplementationName &lt;&gt; &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+					If Right(PV(i).Name, (Len(PV(i).Name)-Len(MetaPropKeyPrefix))) = &quot;Language&quot; Then
+						ctrl.Text=TrancodeLanguage2Label(PV(i).Value)
+					Else
+						ctrl.text=entity2char(PV(i).Value)
+					End If
+				Else &apos; the meta field is a checkbox
+					ctrl.state = (PV(i).Value)    
+				End If
+			EndIf
+		End If    
+	Next 
+&apos;-------- Preferences ----------
+	For I = 0 to uBound(PV) 
+		If Left(PV(i).Name, Len(PrefPropKeyPrefix)) = PrefPropKeyPrefix Then &apos;is a meta custom property
+			ctrl=Dlg.getControl(PV(i).Name)	
+			If not IsNull(ctrl) and (not IsEmpty(PV(i).Value)) Then
+				AllEmpty = False
+				If ctrl.ImplementationName &lt;&gt; &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+&apos;					If Right(PV(i).Name, (Len(PV(i).Name)-Len(PrefPropKeyPrefix))) = &quot;Language&quot; Then
+&apos;						ctrl.Text=TrancodeLanguage2Label(PV(i).Value)
+&apos;					Else
+					ctrl.text=entity2char(PV(i).Value)
+				Else &apos; the meta field is a checkbox
+					ctrl.state = (PV(i).Value)    
+				End If
+			EndIf
+		End If    
+	Next 
+    If AllEmpty Then    &apos; fill metadata from filename
+&apos;        msgbox &quot;No Metadata found, get Meta from Filename&quot;
+        GetMetadata
+    End If
+
+End Sub
+
+
+
+Sub DLG2CustomProps
+    Dim ctrls, ctrl As Object
+    Dim pvalue As String
+    Dim i As Integer
+    ctrls=dlg.getControls()
+    
+&apos;--------- Metadata ------------    
+    For i = 0 to uBound(dlg.getControls())
+        If Left(ctrls(i).Model.Name, Len(MetaPropKeyPrefix)) = MetaPropKeyPrefix Then &apos;is a meta custom Field
+        
+			If ctrls(i).ImplementationName &lt;&gt; &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+                If (not IsNull(ctrls(i).Text)) and ctrls(i).Text&lt;&gt;&quot;&quot; Then                 	
+                	If InStr (ctrls(i).Text, &quot;MetaDLG.&quot; &amp; MetaPropKeyPrefix) &gt; 0 Then &apos; workaround to solve a bug in the dialog editor
+                        ctrls(i).Text = &quot;&quot;  
+                    End If
+                End If
+                If (not IsNull(ctrls(i).Text)) and ctrls(i).Text&lt;&gt;&quot;&quot; Then                 	
+                	If InStr (ctrls(i).Text, &quot;MetaDLG.&quot; &amp; MetaPropKeyPrefix) &gt; 0 Then &apos; workaround to solve a bug in the dialog editor
+                        ctrls(i).Text = &quot;&quot;  
+                    End If
+                
+                    If Right(ctrls(i).Model.Name, (Len(ctrls(i).Model.Name)-Len(MetaPropKeyPrefix))) = &quot;Language&quot; Then    
+                        SetMetaCustomProp(ctrls(i).Model.Name,TrancodeLanguage2ISO(ctrls(i).Text), False)
+                    ElseIf Right(ctrls(i).Model.Name, (Len(ctrls(i).Model.Name)-Len(MetaPropKeyPrefix))) = &quot;CoverPath&quot; Then
+                        SetMetaCustomProp(ctrls(i).Model.Name,ctrls(i).Text, False)
+                    Else
+                        pvalue=char2entity(ctrls(i).Text)
+                        SetMetaCustomProp(ctrls(i).Model.Name,pvalue, False)
+                    EndIf
+                Else
+                    RemoveMetaCustomProp(ctrls(i).Model.Name)
+				EndIf 
+			Else &apos; the meta field is a checkbox
+				SetMetaCustomProp(ctrls(i).Model.Name,ctrls(i).state, False)
+			End If
+        End If
+    Next 
+    
+&apos;--------- Preferences ------------    
+    For i = 0 to uBound(dlg.getControls())
+        If Left(ctrls(i).Model.Name, Len(PrefPropKeyPrefix)) = PrefPropKeyPrefix Then &apos;is a meta custom Field
+        
+			If ctrls(i).ImplementationName &lt;&gt; &quot;stardiv.Toolkit.UnoCheckBoxControl&quot; Then
+                If (not IsNull(ctrls(i).Text)) and ctrls(i).Text&lt;&gt;&quot;&quot; Then                 	
+                	If InStr (ctrls(i).Text, &quot;MetaDLG.&quot; &amp; PrefPropKeyPrefix) &gt; 0 Then &apos; workaround to solve a bug in the dialog editor
+                        ctrls(i).Text = &quot;&quot;  
+                    End If
+                End If
+                If (not IsNull(ctrls(i).Text)) and ctrls(i).Text&lt;&gt;&quot;&quot; Then                 	
+                	If InStr (ctrls(i).Text, &quot;MetaDLG.&quot; &amp; PrefPropKeyPrefix) &gt; 0 Then &apos; workaround to solve a bug in the dialog editor
+                        ctrls(i).Text = &quot;&quot;  
+                    End If
+                
+                    If Right(ctrls(i).Model.Name, (Len(ctrls(i).Model.Name)-Len(PrefPropKeyPrefix))) = &quot;Language&quot; Then    
+                        SetMetaCustomProp(ctrls(i).Model.Name,TrancodeLanguage2ISO(ctrls(i).Text), False)
+                    Else
+                        pvalue=char2entity(ctrls(i).Text)
+                        SetMetaCustomProp(ctrls(i).Model.Name,pvalue, False)
+                    EndIf
+                Else
+                    RemoveMetaCustomProp(ctrls(i).Model.Name)
+				EndIf 
+			Else &apos; the meta field is a checkbox
+				SetMetaCustomProp(ctrls(i).Model.Name,ctrls(i).state, False)
+			End If
+        End If
+    Next 
+    
+    
+	isCoverPresent = False
+    CoverFile = dlg.getControl(&quot;w2e_MetaCoverPath&quot;).text  
+    If CoverFile &lt;&gt; &quot;&quot; then
+       if FileExists(CoverFile) Then
+           isCoverPresent = True
+       end if   
+    End If
+End Sub
+
+
+Sub SetMetaCustomProp(MetaPropKey As String, MetaPropValue As String, OnlyInsert As Boolean)
+    Dim metaProp As New com.sun.star.beans.PropertyValue
+    Dim UDP, PV As Object
+    Dim I As Integer
+
+    UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
+    PV = UDP.getPropertyValues() 
+    
+    For I = 0 to uBound(PV) 
+         If PV(i).Name = MetaPropKey Then
+             metaProp=PV(i)
+         End If
+    Next 
+    If isNull(metaProp) Or isEmpty(metaProp) Or metaProp.Name &lt;&gt; MetaPropKey Then
+                 UDP.addProperty(MetaPropKey,(128),MetaPropValue) &apos;128: removeable; 16: readonly
+    ElseIf not OnlyInsert Then
+             UDP.removeProperty(MetaPropKey)
+             UDP.addProperty(MetaPropKey,(128),MetaPropValue)             
+    End If
+
+End Sub    
+
+
+Sub RemoveMetaCustomProp(MetaPropKey As String)
+    Dim metaProp As New com.sun.star.beans.PropertyValue
+    Dim UDP, PV As Object
+	Dim I As Integer
+	
+    UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
+
+    PV =     UDP.getPropertyValues() 
+    For I = 0 to uBound(PV) 
+         If PV(i).Name = MetaPropKey Then
+             metaProp=PV(i)
+         End If
+    Next 
+    If not isNull(metaProp) and  metaProp.Name = MetaPropKey Then
+                 UDP.removeProperty(MetaPropKey)
+    End If
+End Sub    
+
+Function GetMetaXmlBlock(sMyAppName As String, sVersion As String,  myUUIDv4 As String)
+    Dim xml As String
+    Dim metaProp As New com.sun.star.beans.PropertyValue
+    Dim UDP, PV As Object
+    Dim tag as String
+    Dim indx As Integer
+	Dim J As Integer
+	
+    xml=&quot; &lt;metadata xmlns:dc=&quot;&quot;http://purl.org/dc/elements/1.1/&quot;&quot; xmlns:opf=&quot;&quot;http://www.idpf.org/2007/opf&quot;&quot;&gt;&quot; &amp; CR
+    xml= xml &amp;  &quot;  &lt;dc:identifier id=&quot;&quot;BookID&quot;&quot; opf:scheme=&quot;&quot;UUID&quot;&quot;&gt;&quot; &amp; myUUIDv4 &amp; &quot;&lt;/dc:identifier&gt;&quot; &amp; CR
+    xml= xml &amp;  &quot;  &lt;dc:contributor opf:role=&quot;&quot;bkp&quot;&quot;&gt;Created with &quot; &amp; sMyAppName &amp; &quot; &quot; &amp; sVersion &amp; &quot; by &quot; &amp; ThisIsMe &amp; CR &amp; MyWebSite &amp;&quot;&lt;/dc:contributor&gt;&quot; &amp; CR
+    xml= xml &amp;  &quot;  &lt;dc:date opf:event=&quot;&quot;creation&quot;&quot;&gt;&quot; &amp; Year(Now) &amp; &quot;-&quot; &amp; Format(Month(Now), &quot;00&quot;) &amp; &quot;-&quot; &amp; Format(Day(Now), &quot;00&quot;) &amp; &quot;&lt;/dc:date&gt;&quot; &amp; CR
+
+    UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
+    PV = UDP.getPropertyValues() 
+
+    For J= 0 to uBound(PV) 
+         metaProp=PV(J)
+         If Left(metaProp.Name, Len(MetaPropKeyPrefix)) = MetaPropKeyPrefix Then &apos;is a meta custom property
+&apos;                 MsgBox(metaProp.Name &amp; &quot; - &quot; &amp; metaProp.Value)
+                 tag=GetXmlFilledTag(metaProp.Name,metaProp.Value)
+                 If not IsNull(tag) and not IsEmpty(tag) and (not IsEmpty(metaProp.Value)) Then
+                     xml= xml &amp; tag
+                 End If
+         End If    
+    Next 
+    xml= xml &amp;  &quot;  &lt;meta name=&quot;&quot;&quot; &amp; sMyAppName &amp; &quot;&quot;&quot; content=&quot;&quot;&quot; &amp; sVersion &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR 
+    xml= xml &amp;  &quot;  &lt;meta name=&quot;&quot;cover&quot;&quot; content=&quot;&quot;cover.jpg&quot;&quot;/&gt;&quot; &amp; CR 
+    xml= xml &amp;  &quot; &lt;/metadata&gt;&quot; &amp; CR
+
+    GetMetaXmlBlock=xml
+End Function
+
+
+Function GetXmlFilledTag(MetaPropKey As String, MetaPropValue As String)
+    Dim xmls As String
+    Dim target As String
+&apos;    target=Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix)))
+&apos;    If     Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;Title&quot; Then
+&apos;        xmls=&quot;        &lt;dc:title&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:title&gt;&quot; &amp; CR
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;Publisher&quot; Then
+&apos;        xmls=&quot;        &lt;dc:publisher&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:publisher&gt;&quot; &amp; CR
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;Author&quot; Then
+&apos;        xmls=&quot;        &lt;dc:creator opf:role=&quot;&quot;aut&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:creator&gt;&quot; &amp; CR
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;ISBN&quot; Then
+&apos;        xmls=&quot;        &lt;dc:identifier opf:scheme=&quot;&quot;ISBN&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:identifier&gt;&quot; &amp; CR
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;Description&quot; Then
+&apos;        xmls=&quot;        &lt;dc:description&gt;&lt;![CDATA[&quot; &amp; Slip(MetaPropValue, chr(10), &quot;&lt;br/&gt;&quot;) &amp; &quot;]]&gt;&lt;/dc:description&gt;&quot; &amp; CR
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;Language&quot; Then
+&apos;        xmls=&quot;        &lt;dc:language&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:language&gt;&quot; &amp; CR    
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;OriginalTitle&quot; Then
+&apos;        xmls=&quot;        &lt;dc:source&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:source&gt;&quot; &amp; CR            
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;PublishingDate&quot; Then
+&apos;        xmls=&quot;        &lt;dc:date opf:event=&quot;&quot;publication&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:date&gt;&quot; &amp; CR
+&apos;    ElseIf    Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix))) = &quot;Tags&quot; Then
+&apos;        xmls=&quot;        &lt;dc:subject&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:subject&gt;&quot; &amp; CR
+&apos;    End If
+	target=Right(MetaPropKey, (Len(MetaPropKey)-Len(MetaPropKeyPrefix)))
+    Select Case target
+    Case &quot;Title&quot;
+        xmls=&quot;  &lt;dc:title&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:title&gt;&quot; &amp; CR
+    Case &quot;Publisher&quot;
+        xmls=&quot;  &lt;dc:publisher&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:publisher&gt;&quot; &amp; CR
+    Case &quot;Author&quot;
+        xmls=&quot;  &lt;dc:creator opf:role=&quot;&quot;aut&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:creator&gt;&quot; &amp; CR
+    Case &quot;ISBN&quot;
+        xmls=&quot;  &lt;dc:identifier opf:scheme=&quot;&quot;ISBN&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:identifier&gt;&quot; &amp; CR
+    Case &quot;Description&quot;
+        xmls=&quot;  &lt;dc:description&gt;&lt;![CDATA[&quot; &amp; Slip(MetaPropValue, chr(10), &quot;&lt;br/&gt;&quot;) &amp; &quot;]]&gt;&lt;/dc:description&gt;&quot; &amp; CR
+    Case &quot;Language&quot; 
+        xmls=&quot;  &lt;dc:language&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:language&gt;&quot; &amp; CR    
+    Case &quot;OriginalTitle&quot; 
+        xmls=&quot;  &lt;dc:source&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:source&gt;&quot; &amp; CR            
+    Case &quot;PublishingDate&quot;
+        xmls=&quot;  &lt;dc:date opf:event=&quot;&quot;publication&quot;&quot;&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:date&gt;&quot; &amp; CR
+    Case &quot;Tags&quot;
+        xmls=&quot;  &lt;dc:subject&gt;&quot; &amp; MetaPropValue &amp; &quot;&lt;/dc:subject&gt;&quot; &amp; CR
+    End Select
+    GetXmlFilledTag=xmls
+End Function
+
+
+Function TrancodeLanguage2Label(Lang As String)
+	Dim i as Integer
+	Dim R As String
+	For i = 1 To Ubound(LangArray)
+		If Lang = LangArray(i,2) Then
+			R = LangArray(i,1)
+			Exit For
+		Else
+			R = &quot;English&quot;
+		End If
+	Next i
+	TrancodeLanguage2Label=R
+End Function
+
+
+Function TrancodeLanguage2ISO(Lang As String)
+	Dim i as Integer
+		Dim R As String
+	For i = 1 To Ubound(LangArray)
+		If Lang = LangArray(i,1) Then
+			R = LangArray(i,2)
+			Exit For
+		Else
+			R = &quot;en&quot;
+		End If
+	Next i
+	TrancodeLanguage2ISO=R
+End Function
+
+
+Sub ListLanguages
+	Dim oWindow    &apos;The container window supports the awt XDevice interface.
+	Dim oDescript  &apos;Array of awt FontDescriptor structures
+	Dim oList as Variant
+	Dim i%         &apos;General index variable
+	
+	oWindow = ThisComponent.getCurrentController().getFrame().getContainerWindow()
+	oDescript = oWindow.getFontDescriptors()
+
+	oList = dlg.getControl(&quot;w2e_MetaLanguage&quot;)
+	For i =  UBound(LangArray) To 1 Step -1
+		oList.addItem(LangArray(i,1),0)
+	Next
+	
+End Sub
+
+Sub CheckFields
+
+	Dim FieldsOK As Boolean
+	FieldsOK = true
+	Dlg.getControl(&quot;RB_File&quot;).model.TextColor = 0
+	Dlg.getControl(&quot;RB_File&quot;).model.FontWeight = 100
+	Dlg.getControl(&quot;RB_First&quot;).model.TextColor = 0
+	Dlg.getControl(&quot;RB_First&quot;).model.FontWeight = 100
+	Dlg.getControl(&quot;FrameControl1&quot;).model.TextColor = 0
+	Dlg.getControl(&quot;FrameControl1&quot;).model.FontWeight = 100
+&apos;------- Is title present? ----------- 
+	If InStr (Dlg.getControl(&quot;w2e_MetaTitle&quot;).Text, &quot;MetaDLG.&quot;) &gt; 0 Or Dlg.getControl(&quot;w2e_MetaTitle&quot;).Text = &quot;&quot; Then
+		Dlg.getControl(&quot;Label2&quot;).model.TextColor = &amp;hFF0000
+		Dlg.getControl(&quot;Label2&quot;).model.FontWeight = 200
+		FieldsOK = false 
+	Else
+		Dlg.getControl(&quot;Label2&quot;).model.TextColor = 0
+		Dlg.getControl(&quot;Label2&quot;).model.FontWeight = 100
+	End If
+&apos;-------- Is author present? ------------
+	If InStr (Dlg.getControl(&quot;w2e_MetaAuthor&quot;).Text, &quot;MetaDLG.&quot;) &gt; 0 Or Dlg.getControl(&quot;w2e_MetaAuthor&quot;).Text = &quot;&quot; Then
+		Dlg.getControl(&quot;Label11&quot;).model.TextColor = &amp;hFF0000
+		Dlg.getControl(&quot;Label11&quot;).model.FontWeight = 200
+		FieldsOK = false 
+	Else
+		Dlg.getControl(&quot;Label11&quot;).model.TextColor = 0
+		Dlg.getControl(&quot;Label11&quot;).model.FontWeight = 100
+	End If
+&apos;-------- Is cover file selected and present? ----------	
+	If Dlg.getControl(&quot;RB_File&quot;).model.State = 1 Then	&apos;Is &quot;cover from file&quot; selected?
+		If FileExists(Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).Model.Text) Then	&apos;Is file present?
+			SetCoverBackgroundColor
+			Dlg.getControl(&quot;RB_File&quot;).model.TextColor = 0
+			Dlg.getControl(&quot;RB_File&quot;).model.FontWeight = 100	
+			Dlg.getControl(&quot;FrameControl1&quot;).model.TextColor = 0
+			Dlg.getControl(&quot;FrameControl1&quot;).model.FontWeight = 100	
+			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.TextColor = 0
+			Dlg.getControl(&quot;MetaCover&quot;).Model.ImageURL =  ConvertToUrl(Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).text)
+		Else
+			Dlg.getControl(&quot;background1&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background2&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background3&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background4&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;RB_File&quot;).model.TextColor = &amp;hFF0000
+			Dlg.getControl(&quot;RB_File&quot;).model.FontWeight = 200
+			Dlg.getControl(&quot;FrameControl1&quot;).model.TextColor = &amp;hFF0000
+			Dlg.getControl(&quot;FrameControl1&quot;).model.FontWeight = 200
+&apos;			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.TextColor = &amp;hFF0000
+&apos;			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.Text = &quot;  ?  ?  ?  ?  ?  ?  ?  ?  ?&quot;
+			Dlg.GetControl(&quot;MetaCover&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/MissingCover.jpg&quot;)
+			FieldsOK = false
+		End If
+	End If
+	If Dlg.getControl(&quot;RB_None&quot;).model.State = 1 Then	&apos;Is &quot;no cover file&quot; selected?
+			Dlg.getControl(&quot;background1&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background2&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background3&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background4&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.Text = &quot;&quot;
+			Dlg.getControl(&quot;MetaCover&quot;).Model.ImageURL =  (extensionLocation() &amp; &quot;/icons/NoCover.png&quot;)
+&apos;			Dlg.getControl(&quot;Label8&quot;).model.TextColor = 0
+&apos;			Dlg.getControl(&quot;Label8&quot;).model.FontWeight = 100		
+	End If
+	If Dlg.getControl(&quot;RB_First&quot;).model.State = 1 Then	&apos;Is &quot;first image&quot; selected?
+    	If ThisComponent.GraphicObjects.count&gt;0 Then &apos;there are images in this doc?
+			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.Text = &quot;&quot;
+			Dlg.getControl(&quot;RB_First&quot;).model.TextColor = 0
+			Dlg.getControl(&quot;RB_First&quot;).model.FontWeight = 100
+			Dlg.getControl(&quot;FrameControl1&quot;).model.TextColor = 0
+			Dlg.getControl(&quot;FrameControl1&quot;).model.FontWeight = 100
+			SetCoverBackgroundColor
+			GetFirstImage
+		Else
+			Dlg.getControl(&quot;background1&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background2&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background3&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;background4&quot;).Model.BackgroundColor = &amp;hFFFFFF
+			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.Text = &quot;&quot;
+			Dlg.getControl(&quot;MetaCover&quot;).Model.ImageURL =  (extensionLocation() &amp; &quot;/icons/MissingCover.jpg&quot;)
+			Dlg.getControl(&quot;RB_First&quot;).model.TextColor = &amp;hFF0000
+			Dlg.getControl(&quot;RB_First&quot;).model.FontWeight = 200
+			Dlg.getControl(&quot;FrameControl1&quot;).model.TextColor = &amp;hFF0000
+			Dlg.getControl(&quot;FrameControl1&quot;).model.FontWeight = 200
+&apos;			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.TextColor = &amp;hFF0000
+&apos;			Dlg.getControl(&quot;w2e_MetaCoverPath&quot;).model.Text = &quot;  ?  ?  ?  ?  ?  ?  ?  ?  ?&quot;
+			FieldsOK = false
+		End If
+	End If
+
+	If FieldsOK = true Then
+		Dlg.getControl(&quot;CB_OK&quot;).enable  = true
+	Else 
+		Dlg.getControl(&quot;CB_OK&quot;).enable  = false
+	End If
+End Sub
+
+Sub CheckMandatoryMetadata
+
+&apos;check if the mandatory metadata are filled
+	Dim MandatoryMetaMissing As Boolean
+	MandatoryMetaMissing = False
+	If getMetaValue (&quot;Title&quot;)= &quot;&quot; Or getMetaValue (&quot;Author&quot;)= &quot;&quot; Then MandatoryMetaMissing = True
+	If getMetaValue (&quot;CoverType&quot;)= &quot;File&quot; Then
+		If Not FileExists (getMetaValue(&quot;CoverPath&quot;)) Then MandatoryMetaMissing = True
+	End If
+
+	If MandatoryMetaMissing Then MetaMain
+End Sub
+
+Sub SetCoverBackgroundColor
+	Dim R,G,B as Integer
+	Dim xR,xG,xB As String
+
+	R = Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value
+	G = Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value
+	B = Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value
+	xR = Hex(R)
+	xG = Hex(G)
+	xB = Hex(B)
+	If Len(xR)=1 Then xR = &quot;0&quot; &amp; xR	
+	If Len(xG)=1 Then xG = &quot;0&quot; &amp; xG
+	If Len(xB)=1 Then xB = &quot;0&quot; &amp; xB
+	Dlg.getControl(&quot;background1&quot;).Model.BackgroundColor = (R*256*256) + (G*256) + B
+	Dlg.getControl(&quot;background2&quot;).Model.BackgroundColor = (R*256*256) + (G*256) + B
+	Dlg.getControl(&quot;background3&quot;).Model.BackgroundColor = (R*256*256) + (G*256) + B
+	Dlg.getControl(&quot;background4&quot;).Model.BackgroundColor = (R*256*256) + (G*256) + B
+	Dlg.getControl(&quot;w2e_MetaBackgroundColor&quot;).Model.Text = xR &amp; xG &amp; xB
+	Dlg.getControl(&quot;MetaCover&quot;).Model.BackgroundColor = (R*256*256) + (G*256) + B
+End Sub
+
+
+Function getMetaValue(myMeta As String) As String
+&apos;returns the metadata value by name
+	Dim UDP as Object		&apos;User Defined Property
+	Dim PV as Object		&apos;Property Value
+	Dim i as Integer
+	UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
+	PV = UDP.getPropertyValues()
+	getMetaValue = &quot;&quot;
+	For i = 0 to uBound(PV)
+		If InStr(PV(i).Name, MetaPropKeyPrefix &amp; myMeta)= 1  Then getMetaValue = PV(i).Value
+	Next
+&apos;	If getMetaValue =&quot;&quot; then msgbox &quot;Metadata &quot;&quot;&quot; &amp; myMeta &amp; &quot; missing!&quot;
+End Function
+
+Function getPrefValue(myPref As String) As String
+&apos;returns the metadata value by name
+	Dim UDP as Object		&apos;User Defined Property
+	Dim PV as Object		&apos;Property Value
+	Dim i as Integer
+	UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
+	PV = UDP.getPropertyValues()
+	getPrefValue = &quot;&quot;
+	For i = 0 to uBound(PV)
+		If InStr(PV(i).Name, PrefPropKeyPrefix &amp; myPref)= 1  Then getPrefValue = PV(i).Value
+	Next
+&apos;	If getMetaValue =&quot;&quot; then msgbox &quot;Metadata &quot;&quot;&quot; &amp; myMeta &amp; &quot; missing!&quot;
+End Function
+
+Sub CoverChoose
+	Dim FilePicker, FilePickerArgs As Object
+	Dim FilePath() As String
+	
+	If Dlg.GetControl(&quot;RB_First&quot;).State = True Then 
+		CoverType = &quot;First&quot;
+		CoverPath = &quot;&quot;
+	End If
+	If Dlg.GetControl(&quot;RB_File&quot;).State = True Then 
+		CoverType = &quot;File&quot;
+&apos;		Dlg.GetControl(&quot;w2e_MetaCoverPath&quot;).Model.Text = myOpenFileDialog()
+		FilePicker = createUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+&apos;		FilePicker.appendFilter(&quot;Jpeg, Jpg, PNG, GIF, SVG&quot;,&quot;*.jpeg;*.jpg;*.png;*.gif;*.svg&quot;)
+&apos;		FilePicker.appendFilter(&quot;*.*&quot;,&quot;*.*&quot;)
+&apos;		FilePicker.SetCurrentFilter(&quot;Jpeg, Jpg, PNG, GIF, SVG&quot;,&quot;*.jpeg;*.jpg;*.png;*.gif;*.svg&quot;)
+		If FilePicker.execute() Then
+			FilePath = FilePicker.getFiles() 
+			Dlg.GetControl(&quot;w2e_MetaCoverPath&quot;).Model.Text = ConvertToURL( FilePath(0) )
+		End If 	
+		CoverPath = Dlg.GetControl(&quot;w2e_MetaCoverPath&quot;).Model.Text
+	End If
+	If Dlg.GetControl(&quot;RB_None&quot;).State = True Then
+		CoverType = &quot;None&quot;
+&apos;		Dlg.GetControl(&quot;MetaCover&quot;).Model.ImageURL = ConvertToUrl(extensionLocation &amp; &quot;\icons\NoCover.jpg&quot;)
+		CoverPath = &quot;&quot;
+	End If
+	Dlg.GetControl(&quot;w2e_MetaCoverType&quot;).Model.Text = CoverType
+	CheckFields
+End Sub
+
+Sub initLangArray
+	LangArray(1,1) = &quot;Abkhazian&quot;:				LangArray(1,2) = &quot;ab&quot;
+	LangArray(2,1) = &quot;Afar&quot;:					LangArray(2,2) = &quot;aa&quot;
+	LangArray(3,1) = &quot;Afrikaans&quot;:				LangArray(3,2) = &quot;af&quot;
+	LangArray(4,1) = &quot;Akan&quot;:					LangArray(4,2) = &quot;ak&quot;
+	LangArray(5,1) = &quot;Albanian&quot;:				LangArray(5,2) = &quot;sq&quot;
+	LangArray(6,1) = &quot;Amharic&quot;:					LangArray(6,2) = &quot;am&quot;
+	LangArray(7,1) = &quot;Arabic&quot;:					LangArray(7,2) = &quot;ar&quot;
+	LangArray(8,1) = &quot;Aragonese&quot;:				LangArray(8,2) = &quot;an&quot;
+	LangArray(9,1) = &quot;Armenian&quot;:				LangArray(9,2) = &quot;hy&quot;
+	LangArray(10,1) = &quot;Assamese&quot;:				LangArray(10,2) = &quot;as&quot;
+	LangArray(11,1) = &quot;Avaric&quot;:					LangArray(11,2) = &quot;av&quot;
+	LangArray(12,1) = &quot;Avestan&quot;:				LangArray(12,2) = &quot;ae&quot;
+	LangArray(13,1) = &quot;Aymara&quot;:					LangArray(13,2) = &quot;ay&quot;
+	LangArray(14,1) = &quot;Azerbaijani&quot;:			LangArray(14,2) = &quot;az&quot;
+	LangArray(15,1) = &quot;Bambara&quot;:				LangArray(15,2) = &quot;bm&quot;
+	LangArray(16,1) = &quot;Bashkir&quot;:				LangArray(16,2) = &quot;ba&quot;
+	LangArray(17,1) = &quot;Basque&quot;:					LangArray(17,2) = &quot;eu&quot;
+	LangArray(18,1) = &quot;Belarusian&quot;:				LangArray(18,2) = &quot;be&quot;
+	LangArray(19,1) = &quot;Bengali&quot;:				LangArray(19,2) = &quot;bn&quot;
+	LangArray(20,1) = &quot;Bihari languages&quot;:		LangArray(20,2) = &quot;bh&quot;
+	LangArray(21,1) = &quot;Bislama&quot;:				LangArray(21,2) = &quot;bi&quot;
+	LangArray(22,1) = &quot;Bokmål, Norwegian&quot;:		LangArray(22,2) = &quot;nb&quot;
+	LangArray(23,1) = &quot;Bosnian&quot;:				LangArray(23,2) = &quot;bs&quot;
+	LangArray(24,1) = &quot;Breton&quot;:					LangArray(24,2) = &quot;br&quot;
+	LangArray(25,1) = &quot;Bulgarian&quot;:				LangArray(25,2) = &quot;bg&quot;
+	LangArray(26,1) = &quot;Burmese&quot;:				LangArray(26,2) = &quot;my&quot;
+	LangArray(27,1) = &quot;Castilian&quot;:				LangArray(27,2) = &quot;es&quot;
+	LangArray(28,1) = &quot;Catalan&quot;:				LangArray(28,2) = &quot;ca&quot;
+	LangArray(29,1) = &quot;Central Khmer&quot;:			LangArray(29,2) = &quot;km&quot;
+	LangArray(30,1) = &quot;Chamorro&quot;:				LangArray(30,2) = &quot;ch&quot;
+	LangArray(31,1) = &quot;Chechen&quot;:				LangArray(31,2) = &quot;ce&quot;
+	LangArray(32,1) = &quot;Chewa&quot;:					LangArray(32,2) = &quot;ny&quot;
+	LangArray(33,1) = &quot;Chichewa&quot;:				LangArray(33,2) = &quot;ny&quot;
+	LangArray(34,1) = &quot;Chinese&quot;:				LangArray(34,2) = &quot;zh&quot;
+	LangArray(35,1) = &quot;Chuang&quot;:					LangArray(35,2) = &quot;za&quot;
+	LangArray(36,1) = &quot;Church Slavic&quot;:			LangArray(36,2) = &quot;cu&quot;
+	LangArray(37,1) = &quot;Church Slavonic&quot;:		LangArray(37,2) = &quot;cu&quot;
+	LangArray(38,1) = &quot;Chuvash&quot;:				LangArray(38,2) = &quot;cv&quot;
+	LangArray(39,1) = &quot;Cornish&quot;:				LangArray(39,2) = &quot;kw&quot;
+	LangArray(40,1) = &quot;Corsican&quot;:				LangArray(40,2) = &quot;co&quot;
+	LangArray(41,1) = &quot;Cree&quot;:					LangArray(41,2) = &quot;cr&quot;
+	LangArray(42,1) = &quot;Croatian&quot;:				LangArray(42,2) = &quot;hr&quot;
+	LangArray(43,1) = &quot;Czech&quot;:					LangArray(43,2) = &quot;cs&quot;
+	LangArray(44,1) = &quot;Danish&quot;:					LangArray(44,2) = &quot;da&quot;
+	LangArray(45,1) = &quot;Dhivehi&quot;:				LangArray(45,2) = &quot;dv&quot;
+	LangArray(46,1) = &quot;Divehi&quot;:					LangArray(46,2) = &quot;dv&quot;
+	LangArray(47,1) = &quot;Dutch&quot;:					LangArray(47,2) = &quot;nl&quot;
+	LangArray(48,1) = &quot;Dzongkha&quot;:				LangArray(48,2) = &quot;dz&quot;
+	LangArray(49,1) = &quot;English&quot;:				LangArray(49,2) = &quot;en&quot;
+	LangArray(50,1) = &quot;Esperanto&quot;:				LangArray(50,2) = &quot;eo&quot;
+	LangArray(51,1) = &quot;Estonian&quot;:				LangArray(51,2) = &quot;et&quot;
+	LangArray(52,1) = &quot;Ewe&quot;:					LangArray(52,2) = &quot;ee&quot;
+	LangArray(53,1) = &quot;Faroese&quot;:				LangArray(53,2) = &quot;fo&quot;
+	LangArray(54,1) = &quot;Fijian&quot;:					LangArray(54,2) = &quot;fj&quot;
+	LangArray(55,1) = &quot;Finnish&quot;:				LangArray(55,2) = &quot;fi&quot;
+	LangArray(56,1) = &quot;Flemish&quot;:				LangArray(56,2) = &quot;nl&quot;
+	LangArray(57,1) = &quot;French&quot;:					LangArray(57,2) = &quot;fr&quot;
+	LangArray(58,1) = &quot;Fulah&quot;:					LangArray(58,2) = &quot;ff&quot;
+	LangArray(59,1) = &quot;Gaelic&quot;:					LangArray(59,2) = &quot;gd&quot;
+	LangArray(60,1) = &quot;Galician&quot;:				LangArray(60,2) = &quot;gl&quot;
+	LangArray(61,1) = &quot;Ganda&quot;:					LangArray(61,2) = &quot;lg&quot;
+	LangArray(62,1) = &quot;Georgian&quot;:				LangArray(62,2) = &quot;ka&quot;
+	LangArray(63,1) = &quot;German&quot;:					LangArray(63,2) = &quot;de&quot;
+	LangArray(64,1) = &quot;Gikuyu&quot;:					LangArray(64,2) = &quot;ki&quot;
+	LangArray(65,1) = &quot;Greek, Modern&quot;:			LangArray(65,2) = &quot;el&quot;
+	LangArray(66,1) = &quot;Greenlandic&quot;:			LangArray(66,2) = &quot;kl&quot;
+	LangArray(67,1) = &quot;Guarani&quot;:				LangArray(67,2) = &quot;gn&quot;
+	LangArray(68,1) = &quot;Gujarati&quot;:				LangArray(68,2) = &quot;gu&quot;
+	LangArray(69,1) = &quot;Haitian&quot;:				LangArray(69,2) = &quot;ht&quot;
+	LangArray(70,1) = &quot;Haitian Creole&quot;:			LangArray(70,2) = &quot;ht&quot;
+	LangArray(71,1) = &quot;Hausa&quot;:					LangArray(71,2) = &quot;ha&quot;
+	LangArray(72,1) = &quot;Hebrew&quot;:					LangArray(72,2) = &quot;he&quot;
+	LangArray(73,1) = &quot;Herero&quot;:					LangArray(73,2) = &quot;hz&quot;
+	LangArray(74,1) = &quot;Hindi&quot;:					LangArray(74,2) = &quot;hi&quot;
+	LangArray(75,1) = &quot;Hiri Motu&quot;:				LangArray(75,2) = &quot;ho&quot;
+	LangArray(76,1) = &quot;Hungarian&quot;:				LangArray(76,2) = &quot;hu&quot;
+	LangArray(77,1) = &quot;Icelandic&quot;:				LangArray(77,2) = &quot;is&quot;
+	LangArray(78,1) = &quot;Ido&quot;:					LangArray(78,2) = &quot;io&quot;
+	LangArray(79,1) = &quot;Igbo&quot;:					LangArray(79,2) = &quot;ig&quot;
+	LangArray(80,1) = &quot;Indonesian&quot;:				LangArray(80,2) = &quot;id&quot;
+	LangArray(81,1) = &quot;Interlingua&quot;:			LangArray(81,2) = &quot;ia&quot;
+	LangArray(82,1) = &quot;Interlingue&quot;:			LangArray(82,2) = &quot;ie&quot;
+	LangArray(83,1) = &quot;Inuktitut&quot;:				LangArray(83,2) = &quot;iu&quot;
+	LangArray(84,1) = &quot;Inupiaq&quot;:				LangArray(84,2) = &quot;ik&quot;
+	LangArray(85,1) = &quot;Irish&quot;:					LangArray(85,2) = &quot;ga&quot;
+	LangArray(86,1) = &quot;Italian&quot;:				LangArray(86,2) = &quot;it&quot;
+	LangArray(87,1) = &quot;Japanese&quot;:				LangArray(87,2) = &quot;ja&quot;
+	LangArray(88,1) = &quot;Javanese&quot;:				LangArray(88,2) = &quot;jv&quot;
+	LangArray(89,1) = &quot;Kalaallisut&quot;:			LangArray(89,2) = &quot;kl&quot;
+	LangArray(90,1) = &quot;Kannada&quot;:				LangArray(90,2) = &quot;kn&quot;
+	LangArray(91,1) = &quot;Kanuri&quot;:					LangArray(91,2) = &quot;kr&quot;
+	LangArray(92,1) = &quot;Kashmiri&quot;:				LangArray(92,2) = &quot;ks&quot;
+	LangArray(93,1) = &quot;Kazakh&quot;:					LangArray(93,2) = &quot;kk&quot;
+	LangArray(94,1) = &quot;Kikuyu&quot;:					LangArray(94,2) = &quot;ki&quot;
+	LangArray(95,1) = &quot;Kinyarwanda&quot;:			LangArray(95,2) = &quot;rw&quot;
+	LangArray(96,1) = &quot;Kirghiz&quot;:				LangArray(96,2) = &quot;ky&quot;
+	LangArray(97,1) = &quot;Komi&quot;:					LangArray(97,2) = &quot;kv&quot;
+	LangArray(98,1) = &quot;Kongo&quot;:					LangArray(98,2) = &quot;kg&quot;
+	LangArray(99,1) = &quot;Korean&quot;:					LangArray(99,2) = &quot;ko&quot;
+	LangArray(100,1) = &quot;Kuanyama&quot;:				LangArray(100,2) = &quot;kj&quot;
+	LangArray(101,1) = &quot;Kurdish&quot;:				LangArray(101,2) = &quot;ku&quot;
+	LangArray(102,1) = &quot;Kwanyama&quot;:				LangArray(102,2) = &quot;kj&quot;
+	LangArray(103,1) = &quot;Kyrgyz&quot;:				LangArray(103,2) = &quot;ky&quot;
+	LangArray(104,1) = &quot;Lao&quot;:					LangArray(104,2) = &quot;lo&quot;
+	LangArray(105,1) = &quot;Latin&quot;:					LangArray(105,2) = &quot;la&quot;
+	LangArray(106,1) = &quot;Latvian&quot;:				LangArray(106,2) = &quot;lv&quot;
+	LangArray(107,1) = &quot;Letzeburgesch&quot;:			LangArray(107,2) = &quot;lb&quot;
+	LangArray(108,1) = &quot;Limburgan&quot;:				LangArray(108,2) = &quot;li&quot;
+	LangArray(109,1) = &quot;Limburger&quot;:				LangArray(109,2) = &quot;li&quot;
+	LangArray(110,1) = &quot;Limburgish&quot;:			LangArray(110,2) = &quot;li&quot;
+	LangArray(111,1) = &quot;Lingala&quot;:				LangArray(111,2) = &quot;ln&quot;
+	LangArray(112,1) = &quot;Lithuanian&quot;:			LangArray(112,2) = &quot;lt&quot;
+	LangArray(113,1) = &quot;Luba-Katanga&quot;:			LangArray(113,2) = &quot;lu&quot;
+	LangArray(114,1) = &quot;Luxembourgish&quot;:			LangArray(114,2) = &quot;lb&quot;
+	LangArray(115,1) = &quot;Macedonian&quot;:			LangArray(115,2) = &quot;mk&quot;
+	LangArray(116,1) = &quot;Malagasy&quot;:				LangArray(116,2) = &quot;mg&quot;
+	LangArray(117,1) = &quot;Malay&quot;:					LangArray(117,2) = &quot;ms&quot;
+	LangArray(118,1) = &quot;Malayalam&quot;:				LangArray(118,2) = &quot;ml&quot;
+	LangArray(119,1) = &quot;Maldivian&quot;:				LangArray(119,2) = &quot;dv&quot;
+	LangArray(120,1) = &quot;Maltese&quot;:				LangArray(120,2) = &quot;mt&quot;
+	LangArray(121,1) = &quot;Manx&quot;:					LangArray(121,2) = &quot;gv&quot;
+	LangArray(122,1) = &quot;Maori&quot;:					LangArray(122,2) = &quot;mi&quot;
+	LangArray(123,1) = &quot;Marathi&quot;:				LangArray(123,2) = &quot;mr&quot;
+	LangArray(124,1) = &quot;Marshallese&quot;:			LangArray(124,2) = &quot;mh&quot;
+	LangArray(125,1) = &quot;Moldavian&quot;:				LangArray(125,2) = &quot;ro&quot;
+	LangArray(126,1) = &quot;Moldovan&quot;:				LangArray(126,2) = &quot;ro&quot;
+	LangArray(127,1) = &quot;Mongolian&quot;:				LangArray(127,2) = &quot;mn&quot;
+	LangArray(128,1) = &quot;Nauru&quot;:					LangArray(128,2) = &quot;na&quot;
+	LangArray(129,1) = &quot;Navaho&quot;:				LangArray(129,2) = &quot;nv&quot;
+	LangArray(130,1) = &quot;Navajo&quot;:				LangArray(130,2) = &quot;nv&quot;
+	LangArray(131,1) = &quot;Ndebele, North&quot;:		LangArray(131,2) = &quot;nd&quot;
+	LangArray(132,1) = &quot;Ndebele, South&quot;:		LangArray(132,2) = &quot;nr&quot;
+	LangArray(133,1) = &quot;Ndonga&quot;:				LangArray(133,2) = &quot;ng&quot;
+	LangArray(134,1) = &quot;Nepali&quot;:				LangArray(134,2) = &quot;ne&quot;
+	LangArray(135,1) = &quot;North Ndebele&quot;:			LangArray(135,2) = &quot;nd&quot;
+	LangArray(136,1) = &quot;Northern Sami&quot;:			LangArray(136,2) = &quot;se&quot;
+	LangArray(137,1) = &quot;Norwegian&quot;:				LangArray(137,2) = &quot;no&quot;
+	LangArray(138,1) = &quot;Norwegian Bokmål&quot;:		LangArray(138,2) = &quot;nb&quot;
+	LangArray(139,1) = &quot;Norwegian Nynorsk&quot;:		LangArray(139,2) = &quot;nn&quot;
+	LangArray(140,1) = &quot;Nuosu&quot;:					LangArray(140,2) = &quot;ii&quot;
+	LangArray(141,1) = &quot;Nyanja&quot;:				LangArray(141,2) = &quot;ny&quot;
+	LangArray(142,1) = &quot;Nynorsk, Norwegian&quot;:	LangArray(142,2) = &quot;nn&quot;
+	LangArray(143,1) = &quot;Occidental&quot;:			LangArray(143,2) = &quot;ie&quot;
+	LangArray(144,1) = &quot;Occitan&quot;:				LangArray(144,2) = &quot;oc&quot;
+	LangArray(145,1) = &quot;Ojibwa&quot;:				LangArray(145,2) = &quot;oj&quot;
+	LangArray(146,1) = &quot;Old Bulgarian&quot;:			LangArray(146,2) = &quot;cu&quot;
+	LangArray(147,1) = &quot;Old Church Slavonic&quot;:	LangArray(147,2) = &quot;cu&quot;
+	LangArray(148,1) = &quot;Old Slavonic&quot;:			LangArray(148,2) = &quot;cu&quot;
+	LangArray(149,1) = &quot;Oriya&quot;:					LangArray(149,2) = &quot;or&quot;
+	LangArray(150,1) = &quot;Oromo&quot;:					LangArray(150,2) = &quot;om&quot;
+	LangArray(151,1) = &quot;Ossetian&quot;:				LangArray(151,2) = &quot;os&quot;
+	LangArray(152,1) = &quot;Ossetic&quot;:				LangArray(152,2) = &quot;os&quot;
+	LangArray(153,1) = &quot;Pali&quot;:					LangArray(153,2) = &quot;pi&quot;
+	LangArray(154,1) = &quot;Panjabi&quot;:				LangArray(154,2) = &quot;pa&quot;
+	LangArray(155,1) = &quot;Pashto&quot;:				LangArray(155,2) = &quot;ps&quot;
+	LangArray(156,1) = &quot;Persian&quot;:				LangArray(156,2) = &quot;fa&quot;
+	LangArray(157,1) = &quot;Polish&quot;:				LangArray(157,2) = &quot;pl&quot;
+	LangArray(158,1) = &quot;Portuguese&quot;:			LangArray(158,2) = &quot;pt&quot;
+	LangArray(159,1) = &quot;Punjabi&quot;:				LangArray(159,2) = &quot;pa&quot;
+	LangArray(160,1) = &quot;Pushto&quot;:				LangArray(160,2) = &quot;ps&quot;
+	LangArray(161,1) = &quot;Quechua&quot;:				LangArray(161,2) = &quot;qu&quot;
+	LangArray(162,1) = &quot;Romanian&quot;:				LangArray(162,2) = &quot;ro&quot;
+	LangArray(163,1) = &quot;Romansh&quot;:				LangArray(163,2) = &quot;rm&quot;
+	LangArray(164,1) = &quot;Rundi&quot;:					LangArray(164,2) = &quot;rn&quot;
+	LangArray(165,1) = &quot;Russian&quot;:				LangArray(165,2) = &quot;ru&quot;
+	LangArray(166,1) = &quot;Samoan&quot;:				LangArray(166,2) = &quot;sm&quot;
+	LangArray(167,1) = &quot;Sango&quot;:					LangArray(167,2) = &quot;sg&quot;
+	LangArray(168,1) = &quot;Sanskrit&quot;:				LangArray(168,2) = &quot;sa&quot;
+	LangArray(169,1) = &quot;Sardinian&quot;:				LangArray(169,2) = &quot;sc&quot;
+	LangArray(170,1) = &quot;Scottish Gaelic&quot;:		LangArray(170,2) = &quot;gd&quot;
+	LangArray(171,1) = &quot;Serbian&quot;:				LangArray(171,2) = &quot;sr&quot;
+	LangArray(172,1) = &quot;Shona&quot;:					LangArray(172,2) = &quot;sn&quot;
+	LangArray(173,1) = &quot;Sichuan Yi&quot;:			LangArray(173,2) = &quot;ii&quot;
+	LangArray(174,1) = &quot;Sindhi&quot;:				LangArray(174,2) = &quot;sd&quot;
+	LangArray(175,1) = &quot;Sinhala&quot;:				LangArray(175,2) = &quot;si&quot;
+	LangArray(176,1) = &quot;Sinhalese&quot;:				LangArray(176,2) = &quot;si&quot;
+	LangArray(177,1) = &quot;Slovak&quot;:				LangArray(177,2) = &quot;sk&quot;
+	LangArray(178,1) = &quot;Slovenian&quot;:				LangArray(178,2) = &quot;sl&quot;
+	LangArray(179,1) = &quot;Somali&quot;:				LangArray(179,2) = &quot;so&quot;
+	LangArray(180,1) = &quot;Sotho, Southern&quot;:		LangArray(180,2) = &quot;st&quot;
+	LangArray(181,1) = &quot;South Ndebele&quot;:			LangArray(181,2) = &quot;nr&quot;
+	LangArray(182,1) = &quot;Spanish&quot;:				LangArray(182,2) = &quot;es&quot;
+	LangArray(183,1) = &quot;Sundanese&quot;:				LangArray(183,2) = &quot;su&quot;
+	LangArray(184,1) = &quot;Swahili&quot;:				LangArray(184,2) = &quot;sw&quot;
+	LangArray(185,1) = &quot;Swati&quot;:					LangArray(185,2) = &quot;ss&quot;
+	LangArray(186,1) = &quot;Swedish&quot;:				LangArray(186,2) = &quot;sv&quot;
+	LangArray(187,1) = &quot;Tagalog&quot;:				LangArray(187,2) = &quot;tl&quot;
+	LangArray(188,1) = &quot;Tahitian&quot;:				LangArray(188,2) = &quot;ty&quot;
+	LangArray(189,1) = &quot;Tajik&quot;:					LangArray(189,2) = &quot;tg&quot;
+	LangArray(190,1) = &quot;Tamil&quot;:					LangArray(190,2) = &quot;ta&quot;
+	LangArray(191,1) = &quot;Tatar&quot;:					LangArray(191,2) = &quot;tt&quot;
+	LangArray(192,1) = &quot;Telugu&quot;:				LangArray(192,2) = &quot;te&quot;
+	LangArray(193,1) = &quot;Thai&quot;:					LangArray(193,2) = &quot;th&quot;
+	LangArray(194,1) = &quot;Tibetan&quot;:				LangArray(194,2) = &quot;bo&quot;
+	LangArray(195,1) = &quot;Tigrinya&quot;:				LangArray(195,2) = &quot;ti&quot;
+	LangArray(196,1) = &quot;Tonga&quot;:					LangArray(196,2) = &quot;to&quot;
+	LangArray(197,1) = &quot;Tsonga&quot;:				LangArray(197,2) = &quot;ts&quot;
+	LangArray(198,1) = &quot;Tswana&quot;:				LangArray(198,2) = &quot;tn&quot;
+	LangArray(199,1) = &quot;Turkish&quot;:				LangArray(199,2) = &quot;tr&quot;
+	LangArray(200,1) = &quot;Turkmen&quot;:				LangArray(200,2) = &quot;tk&quot;
+	LangArray(201,1) = &quot;Twi&quot;:					LangArray(201,2) = &quot;tw&quot;
+	LangArray(202,1) = &quot;Uighur&quot;:				LangArray(202,2) = &quot;ug&quot;
+	LangArray(203,1) = &quot;Ukrainian&quot;:				LangArray(203,2) = &quot;uk&quot;
+	LangArray(204,1) = &quot;Urdu&quot;:					LangArray(204,2) = &quot;ur&quot;
+	LangArray(205,1) = &quot;Uyghur&quot;:				LangArray(205,2) = &quot;ug&quot;
+	LangArray(206,1) = &quot;Uzbek&quot;:					LangArray(206,2) = &quot;uz&quot;
+	LangArray(207,1) = &quot;Valencian&quot;:				LangArray(207,2) = &quot;ca&quot;
+	LangArray(208,1) = &quot;Venda&quot;:					LangArray(208,2) = &quot;ve&quot;
+	LangArray(209,1) = &quot;Vietnamese&quot;:			LangArray(209,2) = &quot;vi&quot;
+	LangArray(210,1) = &quot;Volapük&quot;:				LangArray(210,2) = &quot;vo&quot;
+	LangArray(211,1) = &quot;Walloon&quot;:				LangArray(211,2) = &quot;wa&quot;
+	LangArray(212,1) = &quot;Welsh&quot;:					LangArray(212,2) = &quot;cy&quot;
+	LangArray(213,1) = &quot;Western Frisian&quot;:		LangArray(213,2) = &quot;fy&quot;
+	LangArray(214,1) = &quot;Wolof&quot;:					LangArray(214,2) = &quot;wo&quot;
+	LangArray(215,1) = &quot;Xhosa&quot;:					LangArray(215,2) = &quot;xh&quot;
+	LangArray(216,1) = &quot;Yiddish&quot;:				LangArray(216,2) = &quot;yi&quot;
+	LangArray(217,1) = &quot;Yoruba&quot;:				LangArray(217,2) = &quot;yo&quot;
+	LangArray(218,1) = &quot;Zhuang&quot;:				LangArray(218,2) = &quot;za&quot;
+	LangArray(219,1) = &quot;Zulu&quot;:					LangArray(219,2) = &quot;zu&quot;
+End Sub
+
+
+
+  
+Function myOpenFileDialog()&apos;( Optional cFolder, Optional cFileName ) 
+	Dim FilePicker, FilePickerArgs As Object
+	Dim FilePath() As String
+&apos;	FilePickerArgs = Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_LINK_PREVIEW ) 
+
+	FilePicker = createUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot; )
+&apos;	FilePicker.Initialize( FilePickerArgs() ) 
+&apos;	cFolder=ConvertFromURL (&quot;/Users/Luke/Documents/ SIMPLICISSIMUS/SUPPORT/&quot;)
+&apos;	FilePicker.setDisplayDirectory( ConvertToURL( cFolder ) ) 
+&apos;	FilePicker.setDefaultName( cFileName ) 
+&apos;	FilePicker.appendFilter(&quot;Jpeg, Jpg, PNG, GIF, SVG&quot;,&quot;*.jpeg;*.jpg;*.png;*.gif;*.svg&quot;)
+&apos;	FilePicker.appendFilter(&quot;*.*&quot;,&quot;*.*&quot;)
+&apos;	FilePicker.SetCurrentFilter(&quot;Jpeg, Jpg, PNG, GIF, SVG&quot;,&quot;*.jpeg;*.jpg;*.png;*.gif;*.svg&quot;)
+&apos;	FilePicker.appendFilter(&quot;PNG&quot;,&quot;*.png&quot;)
+&apos;	FilePicker.SetCurrentFilter(&quot;PNG&quot;,&quot;*.png&quot;)
+
+&apos;	FilePicker.enableControl(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_LINK, False) 
+&apos;	FilePicker.enableControl(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_PREVIEW, True) 
+&apos;	FilePicker.setValue(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_LINK, 0, False) 
+&apos;	FilePicker.setValue(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_PREVIEW, 0, True 
+	If FilePicker.execute() Then
+		FilePath = FilePicker.getFiles() 
+		myOpenFileDialog() = ConvertToURL( FilePath(0) )
+	End If 
+End Function 
+
+Sub donate
+	Dim sURL as String
+	Dim oSvc as Object
+	oSvc = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	sURL = &quot;http://writer2epub.it/donate&quot;
+	oSvc.execute(sURL, &quot;&quot;, 0)
+End Sub
+
+Sub HelpMe
+	Dim sURL as String
+	Dim oSvc as Object
+	Dim OOLang As string
+	OOLang = GetLanguage
+	OOLang = Right (OOLang,2)
+	oSvc = createUnoService(&quot;com.sun.star.system.SystemShellExecute&quot;)
+	sURL = &quot;http://writer2epub.it/docs&quot; &amp; OOLang
+&apos;	sURL = &quot;http://writer2epub.it/wiki&quot;
+	oSvc.execute(sURL, &quot;&quot;, 0)
+End Sub
+
+
+
+Sub CheckMetaDateFormat
+	Dim myDate As String
+	Dim i As Integer
+	Dim WrongFormat As Boolean
+	
+	WrongFormat= False
+	
+	MyDate = Dlg.getControl(&quot;w2e_MetaPublishingDate&quot;).Model.Text
+	If Len(MyDate)=0 Or Len(MyDate)=4 Or Len(MyDate)=7 Or Len(MyDate)=10 Then
+		For i=1 to Len (MyDate)
+			Select Case Mid(MyDate,i,1)
+			Case &quot;0&quot; To &quot;9&quot;, &quot;-&quot;
+			Case Else
+				WrongFormat = True
+			End Select	
+		Next i
+		If WrongFormat = False Then
+			Select Case Len(MyDate)
+			Case 4
+				If Val(MyDate) &gt; (Year(Now)+1) Then WrongFormat = True
+			Case 7
+				If Val(Right(MyDate,2)) &gt; 12 Then WrongFormat = True
+			Case 10
+				If Val(Right(MyDate,2)) &gt; 31 Then WrongFormat = True
+				If Val(Mid(MyDate,6,2)) &gt; 12 Then WrongFormat = True
+			End Select
+		End If
+	Else
+		WrongFormat = True
+	End If
+	
+	If WrongFormat Then
+		Dlg.getControl(&quot;w2e_MetaPublishingDate&quot;).model.TextColor = &amp;hFF0000
+	Else
+		Dlg.getControl(&quot;w2e_MetaPublishingDate&quot;).model.TextColor = 0
+	End If
+End Sub
+
+Function char2entity (myString As String)
+&apos;converts &quot; &apos; &lt; &gt; &amp; into &amp;quot; &amp;apos; &amp;lt; &amp;gt; &amp;amp; in the provided string
+	myString=Slip(myString,&quot;&amp;&quot;, &quot;&amp;#38;&quot;)
+	myString=Slip(myString,&quot;&lt;&quot;, &quot;&amp;lt;&quot;)
+	myString=Slip(myString,&quot;&gt;&quot;, &quot;&amp;gt;&quot;)
+	myString=Slip(myString,&quot;&apos;&quot;, &quot;&amp;apos;&quot;)
+	myString=Slip(myString,&quot;&quot;&quot;&quot;, &quot;&amp;quot;&quot;)
+	char2entity=myString
+End Function
+
+Function entity2char (myString As String)
+&apos;converts &amp;quot; &amp;apos; &amp;lt; &amp;gt; &amp;amp; into &quot; &apos; &lt; &gt; &amp; in the provided string
+	myString=Slip(myString, &quot;&amp;#38;&quot;,&quot;&amp;&quot;)
+	myString=Slip(myString, &quot;&amp;lt;&quot;,&quot;&lt;&quot;)
+	myString=Slip(myString, &quot;&amp;gt;&quot;,&quot;&gt;&quot;)
+	myString=Slip(myString, &quot;&amp;apos;&quot;,&quot;&apos;&quot;)
+	myString=Slip(myString, &quot;&amp;quot;&quot;,&quot;&quot;&quot;&quot;)
+	entity2char=myString
+End Function
+
+Function Slip(sSource As String, sSearch As String, sReplace As String) As String
+	Dim pStart As Integer &apos; search position
+	Dim sLeft As String		&apos; the string portion before the replaced string
+	Dim sRight As String	&apos; the string portion after the replaced string
+	pStart=0
+	Do &apos;While InStr(sTarget, sSearch)
+		pStart = InStr(pStart+1,sSource, sSearch)
+		Select Case pStart
+		Case 0
+			Exit Do
+		Case &gt; 1 
+			sLeft = Left(sSource, pStart -1)
+		Case Else
+			sLeft = &quot;&quot;    
+		End Select
+		sRight = Right(sSource, Len(sSource) - Len(sSearch) - pStart +1) 
+		sSource = sLeft &amp; sReplace &amp; sRight
+&apos;		msgbox sSource &amp; chr(13) &amp; &quot;left:  &quot; &amp; sleft &amp; chr(13) &amp; &quot;right: &quot; &amp; sright
+	Loop
+	Slip = sSource
+End Function
+
+Sub ChangePageToMeta
+	dlg.getModel.Step  = 1
+End Sub
+
+Sub ChangePageToPrefs
+	dlg.getModel.Step = 2
+End Sub
+
+Sub SetBackgroundBlack
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundWhite
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 255
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundBlue
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 255
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundRed
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundGreen
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 128
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundLime
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundYellow
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundMagenta
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 255
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundCyan
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 255
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundDarkblue
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 160
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundSilver
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 192
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 192
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 192
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundGray
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 128
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 128
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 128
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundLightblue
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 173
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 216
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 230
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundPurple
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 128
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 128
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundOrange
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 255
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 165
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundBrown
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 165
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 42
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 42
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundMaroon
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 128
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 0
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+Sub SetBackgroundOlive
+	Dlg.getControl(&quot;BackgroundColorR&quot;).Model.Value = 128
+	Dlg.getControl(&quot;BackgroundColorG&quot;).Model.Value = 128
+	Dlg.getControl(&quot;BackgroundColorB&quot;).Model.Value = 0
+	SetCoverBackgroundColor
+End Sub
+
+Sub DisableJPGconversion
+	If Dlg.getControl(&quot;w2e_PrefRetainOriginalImages&quot;).State = 1 Then
+		Dlg.getControl(&quot;Label13&quot;).Enable  = False
+		Dlg.getControl(&quot;w2e_PrefImageQuality&quot;).Enable  = False
+		Dlg.getControl(&quot;w2e_PrefBlackWhite&quot;).Enable = False
+	Else
+		Dlg.getControl(&quot;Label13&quot;).Enable  = True
+		Dlg.getControl(&quot;w2e_PrefImageQuality&quot;).Enable  = True
+		Dlg.getControl(&quot;w2e_PrefBlackWhite&quot;).Enable  = True
+	End If
+End Sub
+
+Sub DisableIndexName
+	If Dlg.getControl(&quot;w2e_PrefAddIndex&quot;).State = 0 Then
+		Dlg.getControl(&quot;Label8&quot;).Enable  = False
+		Dlg.getControl(&quot;w2e_PrefIndexTitle&quot;).Enable  = False
+	Else
+		Dlg.getControl(&quot;Label8&quot;).Enable  = True
+		Dlg.getControl(&quot;w2e_PrefIndexTitle&quot;).Enable  = True
+	End If
+End Sub
+
+Sub ListFonts
+
+exit sub
+	Dim oWindow    &apos;The container window supports the awt XDevice interface.
+	Dim oDescript  &apos;Array of awt FontDescriptor structures
+	Dim oList
+	Dim sList ()
+	Dim i%         &apos;General index variable
+	
+	oWindow = ThisComponent.getCurrentController().getFrame().getContainerWindow()
+	oDescript = oWindow.getFontDescriptors()
+
+	oList = dlg.getControl(&quot;EmbeddedFonts&quot;)
+	
+	Redim sList(UBound(oDescript))
+&apos;	msgbox LBound(oDescript) &amp; CR &amp; UBound(oDescript)
+	For i = 1 to UBound(oDescript)
+		sList(i) = oDescript(i).Name &amp; &quot; - &quot; &amp; oDescript(i).StyleName &amp; chr(13)
+	Next
+	
+&apos;	ShellSort (sList())
+	
+	For i = UBound(oDescript) to LBound(oDescript) step -1
+		oList.addItem(sList(i),0) 
+	Next
+	
+End Sub
+</script:module>

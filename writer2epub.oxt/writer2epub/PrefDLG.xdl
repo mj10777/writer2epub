@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="PrefDLG" dlg:left="103" dlg:top="11" dlg:width="177" dlg:height="242" dlg:help-text="&amp;51.PrefDLG.HelpText" dlg:closeable="true" dlg:moveable="true" dlg:title="&amp;52.PrefDLG.Title">
+ <dlg:styles>
+  <dlg:style dlg:style-id="0" dlg:font-height="7"/>
+ </dlg:styles>
+ <dlg:bulletinboard>
+  <dlg:titledbox dlg:id="FrameControl2" dlg:tab-index="3" dlg:left="5" dlg:top="147" dlg:width="163" dlg:height="45" dlg:help-text="&amp;53.PrefDLG.FrameControl2.HelpText">
+   <dlg:title dlg:value="&amp;54.PrefDLG.FrameControl2.Label"/>
+  </dlg:titledbox>
+  <dlg:button dlg:id="CancelBTN" dlg:tab-index="5" dlg:left="91" dlg:top="213" dlg:width="39" dlg:height="14" dlg:help-text="&amp;55.PrefDLG.CancelBTN.HelpText" dlg:value="&amp;56.PrefDLG.CancelBTN.Label" dlg:button-type="cancel" dlg:grab-focus="false"/>
+  <dlg:button dlg:id="OkBTN" dlg:tab-index="6" dlg:left="132" dlg:top="213" dlg:width="39" dlg:height="14" dlg:help-text="&amp;57.PrefDLG.OkBTN.HelpText" dlg:default="true" dlg:value="&amp;58.PrefDLG.OkBTN.Label" dlg:button-type="ok" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="CB_ShowMetaWindow" dlg:tab-index="4" dlg:left="8" dlg:top="177" dlg:width="157" dlg:height="12" dlg:help-text="&amp;61.PrefDLG.CB_ShowMetaWindow.HelpText" dlg:value="&amp;62.PrefDLG.CB_ShowMetaWindow.Label" dlg:checked="true"/>
+  <dlg:button dlg:id="CommandButton1" dlg:tab-index="7" dlg:left="4" dlg:top="213" dlg:width="39" dlg:height="14" dlg:help-text="&amp;63.PrefDLG.CommandButton1.HelpText" dlg:value="&amp;64.PrefDLG.CommandButton1.Label" dlg:grab-focus="false">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:writer2epub.Prefs.ResetRegistry?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:checkbox dlg:id="CB_KeepWF" dlg:tab-index="0" dlg:left="8" dlg:top="13" dlg:width="140" dlg:height="10" dlg:help-text="&amp;76.PrefDLG.CB_KeepWF.HelpText" dlg:value="&amp;77.PrefDLG.CB_KeepWF.Label" dlg:checked="false"/>
+  <dlg:checkbox dlg:id="CB_HideMessages" dlg:tab-index="1" dlg:left="8" dlg:top="85" dlg:width="140" dlg:height="10" dlg:help-text="&amp;82.PrefDLG.CB_HideMessages.HelpText" dlg:value="&amp;83.PrefDLG.CB_HideMessages.Label" dlg:checked="false"/>
+  <dlg:checkbox dlg:id="CB_CloseDocument" dlg:tab-index="8" dlg:left="8" dlg:top="25" dlg:width="140" dlg:height="10" dlg:help-text="&amp;84.PrefDLG.CB_CloseDocument.HelpText" dlg:value="&amp;85.PrefDLG.CB_CloseDocument.Label" dlg:checked="false"/>
+  <dlg:text dlg:id="Label3" dlg:tab-index="10" dlg:left="8" dlg:top="158" dlg:width="109" dlg:height="18" dlg:help-text="&amp;86.PrefDLG.Label3.HelpText" dlg:value="&amp;87.PrefDLG.Label3.Label" dlg:align="right" dlg:multiline="true"/>
+  <dlg:textfield dlg:id="TF_Pattern" dlg:tab-index="9" dlg:left="122" dlg:top="158" dlg:width="40" dlg:height="11" dlg:help-text="&amp;88.PrefDLG.TF_Pattern.HelpText" dlg:align="center" dlg:value="&amp;89.PrefDLG.TF_Pattern.Text"/>
+  <dlg:button dlg:id="CB_Help" dlg:tab-index="11" dlg:left="48" dlg:top="213" dlg:width="39" dlg:height="14" dlg:help-text="&amp;111.PrefDLG.CB_Help.HelpText" dlg:value="&amp;112.PrefDLG.CB_Help.Label" dlg:grab-focus="false">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:writer2epub.Meta.HelpMe?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:text dlg:style-id="0" dlg:id="VersionLabel" dlg:tab-index="12" dlg:left="89" dlg:top="230" dlg:width="79" dlg:height="7" dlg:help-text="&amp;586.PrefDLG.VersionLabel.HelpText" dlg:value="&amp;587.PrefDLG.VersionLabel.Label" dlg:align="right"/>
+  <dlg:checkbox dlg:id="CB_Signature" dlg:tab-index="2" dlg:left="8" dlg:top="195" dlg:width="156" dlg:height="12" dlg:help-text="&amp;857.PrefDLG.CB_Signature.HelpText" dlg:value="&amp;858.PrefDLG.CB_Signature.Label" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="CB_MobiExport" dlg:tab-index="13" dlg:left="8" dlg:top="37" dlg:width="140" dlg:height="10" dlg:help-text="&amp;880.PrefDLG.CB_MobiExport.HelpText" dlg:value="&amp;881.PrefDLG.CB_MobiExport.Label" dlg:checked="false">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:writer2epub.Prefs.SelectKindlegenPath?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:checkbox>
+  <dlg:textfield dlg:id="TF_KindlegenPath" dlg:tab-index="14" dlg:visible="false" dlg:left="5" dlg:top="230" dlg:width="34" dlg:height="10" dlg:help-text="&amp;892.PrefDLG.TF_KindlegenPath.HelpText" dlg:value="&amp;893.PrefDLG.TF_KindlegenPath.Text"/>
+  <dlg:titledbox dlg:id="FrameControl1" dlg:tab-index="15" dlg:left="5" dlg:top="76" dlg:width="163" dlg:height="53" dlg:help-text="&amp;1147.PrefDLG.FrameControl1.HelpText">
+   <dlg:title dlg:value="Warnings"/>
+  </dlg:titledbox>
+  <dlg:text dlg:id="Label1" dlg:tab-index="16" dlg:left="9" dlg:top="100" dlg:width="105" dlg:height="9" dlg:help-text="&amp;1149.PrefDLG.Label1.HelpText" dlg:value="Image Dimension Limit (Kb)"/>
+  <dlg:numericfield dlg:id="NF_MaxImageDim" dlg:tab-index="17" dlg:left="125" dlg:top="100" dlg:width="28" dlg:height="11" dlg:help-text="&amp;1152.PrefDLG.NF_MaxImageDim.HelpText" dlg:decimal-accuracy="0" dlg:value="150" dlg:value-min="1" dlg:value-max="255" dlg:spin="true"/>
+ </dlg:bulletinboard>
+</dlg:window>

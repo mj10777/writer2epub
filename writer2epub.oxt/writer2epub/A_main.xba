@@ -1,0 +1,999 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="A_main" script:language="StarBasic">REM  *****  BASIC  *****
+&apos;______________________________________________________________________________
+&apos;	
+&apos;	Writer to ePub export by Luca Calcinai
+&apos;	
+&apos;	This extension is free software; you can redistribute it and/or
+&apos;	modify it under the terms of the GNU Lesser General Public
+&apos;	License As published by the Free Software Foundation.
+&apos;	
+&apos;	This library is distributed in the hope that it will be useful,
+&apos;	but WITHOUT ANY WARRANTY; without even the implied warranty of
+&apos;	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+&apos;	Lesser General Public License for more details.
+&apos;	
+&apos;	Please email me with any bug reports, questions or comments:
+&apos;	writer2epub@gmail.com
+&apos;
+&apos;	Many thanks to (in no particular order):
+&apos;	Paolo Mantovani, for his code, support and patience
+&apos;	Juda, for his constant support and his hawk&apos;s eye
+&apos;	Shinken, my ePub Master
+&apos;	Sbin, for her first CSS
+&apos;	Roby, my xhtml consultant
+&apos;	Poxi1023, for his odt2pml code portions, widely used in this work
+&apos;	Andrew Pitonyak, for his &quot;teachership&quot;
+&apos;	Attilio Scullari - Intermezzi Editore, for his ADE bug-catching
+&apos;	Roger64 and st_Albert (in no particular order) for helping about file order
+&apos;	Ar&apos;t for solving the mimetype issue :)
+&apos;	Luca Conte for his contribute
+&apos;	AlPe for his critics :)
+&apos;	All users that feedback W2E errors :)
+&apos;
+&apos;	Japanese text handling was developed by kisi.
+&apos;     Please email kisi about any bug:
+&apos;     kisi-kazutaka@nifty.com
+&apos;
+&apos;   1.0.0	Initial version
+&apos;   1.0.1	Removed semicolon in &lt;img width=&quot;51%;&quot;…
+&apos;   1.0.2	Added Japanese localization (Kisi)
+&apos;   		Cleared unused code
+&apos;   1.0.3	Solved issues introduced with 1.0.2 (missing &quot;repl&quot; function)
+&apos;   1.0.4	New &quot;developer mode&quot; handling
+&apos;   1.0.5	Now the extension saves an .odt working file before conversion, to work with any kind of files openable by writer
+&apos;   		Progress bar shown on SVG export (Kisi)
+&apos;   		Now supports English, Italian, Japanese (Kisi) Spanish (Kiermel), Polish (Ar&apos;t)
+&apos;   		Minor bugs solved in code and CSS (Kisi, Ar&apos;t)
+&apos;   		Added icon in the extension manager
+&apos;   1.0.6	Solved a bug that crashes the extension during temp file deleting (Conte and Kisi)
+&apos;   1.0.7	Solved a bug in TOC nesting (Conte)
+&apos;   		Add French localization (Zelda)
+&apos;   		Add licence files
+&apos;   1.0.8	New metadata routine, ready for preference panel (Conte)
+&apos;   		CJKV improvement (Kisi)
+&apos;	1.0.9	Removed a bug in TOC generation
+&apos;			CJKV improvement (Kisi)
+&apos;	1.1.0	Implementation of Metadata and Preferences dialogs
+&apos;			Solved some bugs that prevents TOC validation
+&apos;			Improved CSS and styles recognition
+&apos;	1.1.1	Implementation of file split if too big
+&apos;	1.1.2	Implementation of a working metadata window (Conte)
+&apos;			Improved preferences window (split before Hx, no messages)
+&apos;	1.1.3	Improved preferences window (split after x kB, close doc, meta from filename)
+&apos;			Adding font height modification
+&apos;			Solved a bug in smallcaps if present &quot;&amp;&quot; charachter
+&apos;			Solved a bug in Graphics handling
+&apos;			Improved Graphics handling (Alt, Align)
+&apos;	1.1.4	Solved the image&apos;s naming problem
+&apos;			Add the Reset button in the preference window
+&apos;	1.1.5	Solved a problem in metadata window (Conte)	
+&apos;	1.1.6	Added the base font selection in the preferences
+&apos;	1.1.7	Enabled automatic updates	
+&apos;	1.1.8	Cover image handling in metadata (Sisifone)
+&apos;			iTunesMeta.plist handling	
+&apos;			solved cover image metadata in content.opf
+&apos;			solved wrong deletion of folder with the same name of epub
+&apos;			now converts in .jpg all images unsupported by epub
+&apos;	1.1.9	Solved some bugs: Repl function (again!), early unwanted file splitting	
+&apos;			Solved Superscript issue
+&apos;			Added ISO languages to metadata window
+&apos;	1.1.10	Better metaLanguage handling
+&apos;			Added full support to Italian, French, Spanish, Dutch, Russian, Lithuanian.
+&apos;			Solved a bug that prevents use of the first image as cover
+&apos;	1.1.11	Solved a bug when &lt;&gt;&apos;&quot;&amp; are present in the headers
+&apos;			Improved image handling and positioning. 
+&apos;			Solved a bug in cover handling.
+&apos;			Solved a bug that crashes converting one-coloumn tables
+&apos;			Add a check for author and title metadata (mandatory in ePub)
+&apos;	1.1.12	Remove a limit in document size creation (65525 paragraphs)
+&apos;			Correct a bug in tables generation (cellspacing)
+&apos;			Improved formatting inside tables
+&apos;			Improved CSS
+&apos;			Improved Footnotes handling (CSS style)
+&apos;	1.1.13	Add internal link management
+&apos;			Add the cover background color
+&apos;			Cover handling routines and interface rewritten
+&apos;			Metadata handling improved
+&apos;			CSS small improvements
+&apos;			code cleaning
+&apos;			Add &quot;donate&quot; pushbutton (as requested by users, thanks!)
+&apos;	1.1.14	Some bug removal (missing Dim)
+&apos;			No more compatible with NeoOffice cause a bug in NO.
+&apos;	1.1.15  Solved a bug when CR or LF are present in the description meta
+&apos;			Add full support to lists, extending Kreti&apos;s code
+&apos;			Solved a bug when the first page starts with Heading 1
+&apos;			Solved a bug in some smallcaps charachters
+&apos;			Minor bugs solved
+&apos;			Add the optional signature at the end of document
+&apos;			Add the check on the supported styles
+&apos;			Add a check about missing headings
+&apos;	1.1.16	Added the &quot;Image Quality&quot; setting in preferences
+&apos;			Added the &quot;Black &amp; White images only&quot; setting in preferences
+&apos;			Added the support to the external (linked) images
+&apos;			Added the support to Mobi pocket export (needs Kindlegen)
+&apos;			Added the support to personal styles with name starting with w2e_
+&apos;			Linked help button to new Wiki help site
+&apos;			Improved image export Routines
+&apos;			Improved image name handling
+&apos;			Solved a bug in footnotes handling (thanks to LicosX for support)
+&apos;			Solved a bug in image handling
+&apos;	1.1.17	Improved German translation (thanks to Michael Giebel)
+&apos;			Generated code now uses &lt;strong&gt; and &lt;em&gt; instead of &lt;b&gt; and &lt;i&gt; 
+&apos;	1.1.18	Correct an error in DTD that prevents validation
+&apos;	1.1.19	Correct a problem with Kindlegen 2.4
+&apos;	1.1.20	Same as above :(
+&apos;	1.1.21	New fnSmallCaps solves some bugs and improve small caps handling
+&apos;			Solved Phantom Images bug in fnCheckImageCompatibility
+&apos;			Improved &quot;image as character&quot;
+&apos;			Add Math export to png
+&apos;	1.1.22	Support for LibreOffice 4.0
+&apos;	1.1.23	Solved a bug in &lt;a&gt; tag
+&apos;	1.1.24	Workaround for LibreOffice Mid function bug
+&apos;	1.1.25	Compatibility with AOO 4.0
+&apos;			Solved FlushBookmarkBuffer bug (thanks to Gerhard)
+&apos;	1.1.26	Solved blue formula background bug
+&apos;			Implemented check for file format
+&apos;	1.1.27	New image handling CSS based
+&apos;			Image now are fully compatible with iBooks
+&apos;	1.1.28	Solved a bug in personalized styles
+&apos;			Improved extension compatibility
+&apos;	1.1.28a	by mj10777:
+&apos;			removed  OEBPS directory
+&apos;			html and css formatting, indention 1
+&apos;			added fonts directory, with css entry [fonts not copied]
+&apos;			css file renamed to style_epub.css
+&apos;   image directory renamed to images
+&apos;   added title in content header
+&apos;			
+&apos;
+&apos;			
+&apos;
+&apos;______________________________________________________________________________
+&apos;
+&apos;
+&apos; Declarations:
+
+Option Explicit
+	Public Const sVersion As String = &quot;1.1.28&quot;
+	Public Const sMyAppName As String = &quot;writer2epub&quot;
+	Public Const MetaPropKeyPrefix As String = &quot;w2e_Meta&quot;
+	Public Const PrefPropKeyPrefix As String = &quot;w2e_Pref&quot;
+	Public Const MyWebSite As String = &quot;http://writer2epub.it&quot;
+	Public Const ThisIsMe As String = &quot;Luca Calcinai&quot;
+	Public CR As String		&apos; the carriage return character used often
+	Public sDocURL As String			&apos;
+	Public sDocDir As String			&apos;
+	Public sFileExt As String			&apos;
+	Public sFileN As String
+	Public sFileNoPath As String
+	Public MyEpub, MyEpubFolder As String
+	Public oDoc, fenDoc, oText, oBar As object
+	Public myUUIDv4 As String			&apos;a random generated UUID number used as unique ID
+	Public MetaAuthor, MetaTitle, MetaLanguage, MetaPublisher, MetaYear As String
+	Public sTOC (10000,3) As String		&apos;TOC entry list: 1:text 2:level 3:split#
+	Public iTocLevel As Integer			&apos;TOC item level
+	Public iTOCcount As Integer			&apos;TOC item number
+	Public iSplitCount As Integer		&apos;Split count for jump reference
+	Public iSplitNumber As Integer
+	Public sContentItemFile As String	&apos;TOC split filename
+	Public oBar As Object
+	Public WritingMode    As Integer  	&apos;---- 0= lr-tb, 1= rl-tb, 2= tb-rl
+	Public bRuby          As Boolean  	&apos;---- TRUE= &lt;ruby&gt; was detected
+	Public bKeepWorkingFiles As Boolean
+	Public sDBname As String			&apos;Preference database name
+	Public myPrefs As Variant			&apos;the preferences set
+	Public isCoverPresent as boolean	&apos;????
+	Public CoverFile as string			&apos;????
+	Public InizioCover as string		&apos;????
+	Public CoverPath as string			&apos;path to the cover file, if present
+	Public oBMarksfiles(0) As String
+	Public CoverType As String			&apos;First=first image as cover | None=no cover at all | File=from file
+	Public myLog As String				&apos;Error log file
+	Public MyModule As String			&apos;Module in wich error occourred
+	Type MyStyle
+	ParaStyleName As String
+	CharColor As Long						&apos;char color
+	CharHeight As Integer				&apos;char height in points
+	CharWeight As Integer				&apos;
+	CharPosture As Integer			&apos;
+	CharStrikeout As Integer		&apos;
+	CharUnderline As Integer		&apos;
+&apos;	DropCapFormatCount As Integer
+&apos;	DropCapFormatDistance As Integer
+&apos;	DropCapFormatLines As Integer
+&apos;	DropCapWholeWord As Boolean
+	ParaAdjust As Integer				&apos;align 0=left 1=right 2justify 3 center
+	ParaBackColor As Long				&apos;background color
+	ParaLeftMargin As Long			&apos;left margin in 1/100 mm
+	ParaRightMargin As Long
+	ParaTopMargin As Long
+	ParaBottomMargin As Long
+	ParaFirstLineIndent As Long
+	LeftBorder As Integer
+	RightBorder As Integer
+	TopBorder As Integer
+	BottomBorder As Integer
+	End Type
+	Public StyleList(30) As MyStyle
+    Global sCSSimageRules As String
+	
+&apos;==================================================================
+&apos;========================== MAIN ROUTINE ==========================	
+&apos;==================================================================
+
+Sub writer2epubMain
+
+	Dim myTime As Long
+	CR = Chr(13)
+	oDoc = ThisComponent
+	
+	myLog = &quot;===== Writer2ePub Log ======&quot; &amp; CR
+	MyModule = &quot;A_Main&quot;
+&apos;	On Error GoTo ErrorHand
+	
+	If NOT GlobalScope.BasicLibraries.isLibraryLoaded( &quot;Tools&quot; ) Then 
+		GlobalScope.BasicLibraries.loadLibrary( &quot;Tools&quot; )
+	End If	
+	
+	&apos;====== XRAY DIAGNOSTIC ============
+	&apos; If the XRAY library is installed, loads it
+	&apos; for more info about XRAY see http://bernard.marcelly.perso.sfr.fr/index2.html	
+	If BasicLibraries.hasByName(&quot;XrayTool&quot;) Then	
+		If NOT BasicLibraries.isLibraryLoaded(&quot;XrayTool&quot;) Then 
+			BasicLibraries.LoadLibrary(&quot;XrayTool&quot;)
+		End If
+	End If
+	&apos;===================================
+		
+	initRegistry			&apos;Load or create the registry to store pref values
+	
+	If myPrefs.getPropertyValue(&quot;KeepWF&quot;) = True then
+		bKeepWorkingFiles = TRUE
+	Else
+		bKeepWorkingFiles = FALSE	
+	End If
+	
+	oBar = oDoc.CurrentController.getStatusIndicator()
+	
+	WritingMode = 0
+	bRuby = FALSE
+  	isCoverPresent = false
+  	
+	InitLocal
+
+	myUUIDv4 = UUIDv4()
+	FilePrimer
+		
+	If myPrefs.getPropertyValue(&quot;ShowMetaWindow&quot;) = True Then
+		MetaMain
+	Else
+		CheckMandatoryMetadata	 						&apos;check if metadata are complete, opens meta window if not.
+	End If
+	
+	
+	myTime = Timer
+	
+	ThisComponent.lockControllers 
+	ThisComponent.CurrentController.Frame.ContainerWindow.Enable = False
+		 
+	oBar.start(startMSG,100)	
+
+	SaveWorkingFile(MyEpub)					&apos;save a copy with suffix _w2e.
+	PerformCheck							&apos;performs some corrections and text cleaning
+	CreateFolderStructure(MyEpub)			&apos;builds the folders in according to epub spec
+	CreateMimeTypeFile(MyEpub)				&apos;creates the mimetype file
+	CreateContainerFile(MyEpub)				&apos;creates container.xml file, with the object list
+	PagePrimer(MyEpub)						&apos;performs text and styles clean
+	ExtractWriterGraphics(MyEpub)			&apos;exports graphics and create cover in according with prefs
+	TraverseText(True)						&apos;text scan for bookmarks detection
+	TraverseText(False)						&apos;text scan for xhtml export
+	
+	If WritingMode = 2 Then
+		ChangeWriting(MyEpub)
+	End If
+	
+&apos;	CreateTocFile(MyEpub)					&apos;creates TOC.ncx file
+	CreateHtmlTocFile(MyEpub)				&apos;creates html TOC file (mobi purpose) by Nick
+	CreateTocFile(MyEpub)
+	CreateCSSFile(MyEpub)					&apos;creates CSS file
+	CreateContentOpfFile(MyEpub)			&apos;creates content.opf file
+&apos;	CreateiTunesMetadata(MyEpub)
+	CreateEpub(MyEpub)						&apos;zip the folder
+	
+	ThisComponent.CurrentController.Frame.ContainerWindow.Enable = True
+	ThisComponent.unlockControllers 
+
+	oDoc.Close (True)
+	
+	MobiGen									&apos;creates mobi file, needs kindlegen installed
+	
+&apos;---- remove temp folder and files -----
+	
+	If FileExists(MyEpub &amp; &quot;_W2E.odt&quot;) Then Kill (MyEpub &amp; &quot;_W2E.odt&quot;)
+	If bKeepWorkingFiles = false then	
+		If FileExists(MyEpubFolder) Then RmDir MyEpubFolder		
+	else
+		oDoc.Close (True)		
+	end if
+	
+&apos;-------- ReloadFile ----------
+	
+	If myPrefs.getPropertyValue(&quot;CloseDocument&quot;) = &quot;False&quot; then	
+		oDoc = starDesktop.loadComponentFromUrl (sDocURL, &quot;_blank&quot;, 0, Array())
+	End If
+	oBar.end
+
+	Beep
+	myTime = Timer - myTime
+	
+&apos;--------- End Message --------
+	myLog = endMSG1 &amp; CR &amp; endMSG2 &amp; myTime &amp; endMSG3 &amp; CR &amp; CR &amp; myLog &amp; CR &amp; &quot;**** COMPLETED *****&quot;
+	If myPrefs.getPropertyValue(&quot;HideMessages&quot;) = &quot;False&quot; then
+		DialogLibraries.LoadLibrary(sMyAppName)
+		Dlg=CreateUnoDialog(DialogLibraries.writer2epub.EndDLG)
+		Dlg.getControl(&quot;Log&quot;).text = myLog
+		Dlg.getControl(&quot;Logo&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/Writer2Epub-200x120.jpg&quot;)	
+		Dlg.getControl(&quot;Donate&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/donate_btn.gif&quot;)
+		Dlg.Execute()     
+	    dlg.dispose()
+	End If
+		
+Exit Sub
+	ErrorHand:
+	ErrorHandler
+End Sub
+
+
+&apos;==================================================================
+&apos;============================ END MAIN ============================
+&apos;==================================================================
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Sub FilePrimer
+	
+&apos;Before processing check save status 
+	If oDoc.hasLocation=False Then 
+		MsgBox (saveBeforeMSG,16,sMyAppName) 
+		End 
+	End If
+&apos;Now verify if the document is an .odt file
+	If GetFileNameExtension(oDoc.getURL()) &lt;&gt; &quot;odt&quot; Then
+		MsgBox (saveAsOdtMSG,16,sMyAppName)
+		End
+	End If
+&apos;save before processing! 
+	If (oDoc.isModified) Then
+		MsgBox (saveBeforeMSG,16,sMyAppName)
+		End	
+&apos;		oDoc.store() 
+	End If 
+
+	sDocURL = oDoc.getURL() 
+	sDocDir=DirectoryNameoutofPath(sDocURL, &quot;/&quot;) 
+	sFileExt=GetFileNameExtension(sDocURL) 
+	sFileN=GetFileNamewithoutExtension(sDocURL)      &apos;with path!
+	sFileNoPath=GetFileNameWithoutExtension(sDocURL,&quot;/&quot;) 
+	MyEpub = sFileN 
+	MyEpubFolder = MyEpub &amp; &quot;_W2E_folder&quot;						&apos;temporary folderr
+
+&apos;REMOVE PREVIOSLY GENERATED FILE AND FOLDER
+
+	If FileExists(MyEpub &amp; &quot;.epub&quot;) Then 
+		Kill (MyEpub &amp; &quot;.epub&quot;)
+	End If 
+	
+	If FileExists(MyEpubFolder) Then 
+		RmDir MyEpubFolder
+	End If
+
+	If FileExists(MyEpub &amp; &quot;_W2E.odt&quot;) Then 
+		Kill (MyEpub &amp; &quot;_W2E.odt&quot;)
+	End If 
+	
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub SaveWorkingFile (MyEpub As string)
+
+	dim document   As object
+	dim dispatcher As object
+	dim args1(1) As new com.sun.star.beans.PropertyValue
+	myLog = myLog &amp; CR &amp; &quot;✔ Start SaveWorkingFile&quot;	
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+
+	args1(0).Name = &quot;URL&quot;
+	args1(0).Value =(MyEpub &amp; &quot;_W2E.odt&quot;)
+	args1(1).Name = &quot;FilterName&quot;
+	args1(1).Value = &quot;writer8&quot;
+	
+	dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, args1())
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
+End Sub
+
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+
+Sub CreateFolderStructure (MyEpub As string)
+	myLog = myLog &amp; CR &amp; &quot;✔ Start CreateFolderStructure&quot;
+	MkDir (MyEpubFolder &amp; &quot;/META-INF&quot;)
+	MkDir (MyEpubFolder &amp; &quot;/text&quot;)
+	MkDir (MyEpubFolder &amp; &quot;/fonts&quot;)
+	myLog = myLog &amp; CR &amp; &quot;;✔ End&quot;
+End Sub
+
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub CreateMimeTypeFile (MyEpub As string)
+
+&apos;---- Create MIMETYPE file ----
+	
+	Dim content As string
+	Dim fileAccessService, textOutputStream, outputStream As Object
+	myLog = myLog &amp; CR &amp; &quot;✔ Start CreateMimeTypeFile&quot;
+	content = &quot;application/epub+zip&quot;
+	fileAccessService = createUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	textOutputStream = createUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	
+	outputStream = fileAccessService.openFileWrite(MyEpubFolder + &quot;/mimetype&quot;)		
+	
+	outputStream.truncate()
+	textOutputStream.setOutputStream(outputStream)
+	textOutputStream.writeString(content)
+	textOutputStream.flush()
+	textOutputStream.closeOutput()
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub CreateContainerFile (MyEpub As string)
+&apos;---- Create CONTAINER.XML file ----
+	myLog = myLog &amp; CR &amp; &quot;✔ Start CreateContainerFile&quot;
+	Open MyEpubFolder + &quot;/META-INF/container.xml&quot; For Output As #1
+	Print #1, &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot;?&gt;&quot;
+	Print #1, &quot;&lt;container version=&quot;&quot;1.0&quot;&quot; xmlns=&quot;&quot;urn:oasis:names:tc:opendocument:xmlns:container&quot;&quot;&gt;&quot;
+	Print #1, &quot; &lt;rootfiles&gt;&quot;
+	Print #1, &quot;  &lt;rootfile full-path=&quot;&quot;content.opf&quot;&quot; media-type=&quot;&quot;application/oebps-package+xml&quot;&quot;/&gt;&quot;
+	Print #1, &quot; &lt;/rootfiles&gt;&quot;
+	Print #1, &quot;&lt;/container&gt;&quot;
+	Close #1
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub PagePrimer (MyEpub As string)
+&apos;----- cleans unwanted occurrences in the work document ------
+
+Dim oStyle As Object
+
+	Repl (&quot;&amp;&quot;, &quot;&amp;amp;&quot;, 0)			&apos;XML entity references replacement
+	Repl (&quot;&lt;&quot;, &quot;&amp;lt;&quot;, 0)
+	Repl (&quot;&gt;&quot;, &quot;&amp;gt;&quot;, 0)
+	Repl (&quot;&apos;&quot;, &quot;&amp;#39;&quot;, 0)
+	Repl (&quot;&quot;&quot;&quot;, &quot;&amp;quot;&quot;, 0)
+&apos;	Repl (chr(10), CR &amp; &quot;&lt;br /&gt;&quot; &amp; CR, 0)
+
+&apos;---- forces a page break before each Heading according to the prefs
+	
+	If getPrefValue(&quot;SplitFilesBeforeH1&quot;) = 1 then
+		oDoc.StyleFamilies.getByName(&quot;ParagraphStyles&quot;).getByName(&quot;Heading 1&quot;).BreakType = &quot;4&quot; &apos;page before
+	Else
+		oDoc.StyleFamilies.getByName(&quot;ParagraphStyles&quot;).getByName(&quot;Heading 1&quot;).BreakType = &quot;0&quot; &apos;no page breag
+	End If
+	If getPrefValue(&quot;SplitFilesBeforeH2&quot;) = 1 then
+		oDoc.StyleFamilies.getByName(&quot;ParagraphStyles&quot;).getByName(&quot;Heading 2&quot;).BreakType = &quot;4&quot; &apos;page before
+	Else
+		oDoc.StyleFamilies.getByName(&quot;ParagraphStyles&quot;).getByName(&quot;Heading 2&quot;).BreakType = &quot;0&quot; &apos;no page breag
+	End If
+	If getPrefValue(&quot;SplitFilesBeforeH3&quot;) = 1 then
+		oDoc.StyleFamilies.getByName(&quot;ParagraphStyles&quot;).getByName(&quot;Heading 3&quot;).BreakType = &quot;4&quot; &apos;page before
+	Else
+		oDoc.StyleFamilies.getByName(&quot;ParagraphStyles&quot;).getByName(&quot;Heading 3&quot;).BreakType = &quot;0&quot; &apos;no page breag
+	End If
+	
+&apos;---- removes the Optional Hyphens not handled by ADE
+	Repl (&quot;\x00AD&quot;, &quot;&quot;, 1)
+	
+&apos;---- removes empty lines before and after a heading ------
+&apos; TODO
+	
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub CreateTocFile (MyEpub As string)
+
+&apos;TOC entry list: 1:text 2:level 3:split#
+
+	Dim NextFile As String
+	Dim s_space As String
+	Dim i, j, k, CurLev As Integer
+	Dim myTab, longTab As String
+	Dim bLevelFound As Boolean
+	Dim NPtArray(20) As Integer &apos;max for  H20: 1..20 Headings supported
+	myLog = myLog &amp; CR &amp; &quot;✔ Start CreateTocFile&quot;	
+	oBar.start(createTocMSG,100)
+	oBar.value = 60
+
+	Dim oOutputAccess As Object
+	Dim oOutputStream As Object
+	Dim vOutputData   As Variant
+	oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/toc.ncx&quot; )
+	oOutputStream.setOutputStream(vOutputData)
+	oOutputStream.setEncoding(&quot;UTF-8&quot;)
+	oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot;?&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;&lt;!DOCTYPE ncx PUBLIC &quot;&quot;-//NISO//DTD ncx 2005-1//EN&quot;&quot;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;    &quot;&quot;http://www.daisy.org/z3986/2005/ncx-2005-1.dtd&quot;&quot;&gt;&quot; &amp; CR )
+&apos;	oOutputStream.writeString( &quot;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;&lt;ncx xmlns=&quot;&quot;http://www.daisy.org/z3986/2005/ncx/&quot;&quot; version=&quot;&quot;2005-1&quot;&quot;&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:uid&quot;&quot; content=&quot;&quot;&quot; &amp; MyUUIDv4 &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:depth&quot;&quot; content=&quot;&quot;&quot; &amp; iTocLevel &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	i=iSplitNumber
+	If getPrefValue (&quot;AddIndex&quot;) = 1 Then
+	 i=i+1
+	End If
+	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:totalPageCount&quot;&quot; content=&quot;&quot;&quot; &amp; iSplitNumber &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;  &lt;meta name=&quot;&quot;dtb:maxPageNumber&quot;&quot; content=&quot;&quot;&quot; &amp; i &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;docTitle&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;  &lt;text&gt;&quot; &amp; MetaTitle &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;/docTitle&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;navMap&gt;&quot; &amp; CR )
+	i = 1
+ 
+	Do While sTOC(i, 3) &lt;&gt; &quot;&quot;
+		If sTOC(i, 1) = &quot;&quot; Then sTOC(i, 1) =&quot;*&quot; &apos;The chapter name can be empty...
+		If i &lt;&gt; 1 Then
+			If  sTOC(i, 2) &lt;  sTOC(i-1, 2) or sTOC(i, 2) =  sTOC(i-1, 2) Then    
+				FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, sTOC(i, 2),sTOC(i-1, 2))
+			End If
+		End If
+		
+		s_space = SPACE( sTOC(i, 2) )
+
+		oOutputStream.writeString( s_space &amp; &quot; &lt;navPoint id=&quot;&quot;navPoint-&quot; &amp; i &amp; &quot;&quot;&quot; playOrder=&quot;&quot;&quot; &amp; i &amp; &quot;&quot;&quot;&gt;&quot; &amp; CR )
+		oOutputStream.writeString( s_space &amp; &quot;  &lt;navLabel&gt;&quot; &amp; CR ) 
+		oOutputStream.writeString( s_space &amp; &quot;   &lt;text&gt;&quot; &amp; sTOC(i, 1)  &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+		&apos;oOutputStream.writeString( s_space &amp; &quot;   &lt;text&gt;&quot; &amp; sTOC(i, 1) &amp; &quot; - &quot;  &amp; sTOC(i-1, 2) &amp; &quot; - &quot;  &amp; sTOC(i, 2) &amp; &quot;&lt;/text&gt;&quot; &amp; CR )
+		oOutputStream.writeString( s_space &amp; &quot;  &lt;/navLabel&gt;&quot; &amp; CR )
+		oOutputStream.writeString( s_space &amp; &quot;  &lt;content src=&quot;&quot;text/&quot; &amp; sTOC(i, 3) &amp; &quot;#heading_id_&quot; &amp; i &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+
+		NPtArray( sTOC(i, 2))=NPtArray( sTOC(i, 2))+1
+		i = i + 1
+	Loop
+
+	FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, 1, 2)
+		
+	oOutputStream.writeString( &quot; &lt;/navMap&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;&lt;/ncx&gt;&quot; &amp; CR )
+	oOutputStream.flush()
+	oOutputStream.closeOutput()
+	
+&apos;Toc flattening: removes &quot;jumps&quot; between header levels TODO!
+
+&apos;------------	
+		
+	myTab = &quot;    &quot; &apos;four spaces
+	longTab = myTab &amp; myTab
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;	
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+&apos; == Nick == creates toc.xhtml file
+Sub CreateHtmlTocFile(MyEpub As string)
+	myLog = myLog &amp; CR &amp; &quot;✔ Start CreateHtmlTocFile&quot;
+	If getPrefValue (&quot;AddIndex&quot;) = 1 Then
+		Dim NextFile As String
+		Dim i, j, k, CurLev As Integer
+		Dim myTab, longTab As String
+		Dim bLevelFound As Boolean
+		Dim NPtArray(20) As Integer 
+		
+		oBar.start(createTocMSG,100)
+		oBar.value = 60
+	
+		Dim oOutputAccess As Object
+		Dim oOutputStream As Object
+		Dim vOutputData   As Variant
+		oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+		oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+		vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/text/toc.xhtml&quot; )
+		oOutputStream.setOutputStream(vOutputData)
+		oOutputStream.setEncoding(&quot;UTF-8&quot;)
+		oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot;  &amp; CR )
+		oOutputStream.writeString( &quot;&lt;!DOCTYPE html PUBLIC &quot;&quot;-//W3C//DTD XHTML 1.1//EN&quot;&quot;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;    &quot;&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&quot;&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot;&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot; &lt;head&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;  &lt;title&gt;Table of contents&lt;/title&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot; &lt;/head&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot; &lt;body&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;  &lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount + 1 &amp; &quot;&quot;&quot;&gt;&quot; &amp; getPrefValue (&quot;IndexTitle&quot;) &amp; &quot;&lt;/h1&gt;&quot; &amp; CR )
+		oOutputStream.writeString( &quot;  &lt;div&gt;&quot; &amp; CR )
+
+		i = 1
+	
+		Do While sTOC(i, 3) &lt;&gt; &quot;&quot;			
+			If sTOC(i, 1) = &quot;&quot; Then sTOC(i, 1) =&quot;*&quot; 	
+			oOutputStream.writeString( &quot;   &lt;p class=&quot;&quot;index&quot; &amp; sTOC(i,2) &amp; &quot;&quot;&quot;&gt;&lt;a href=&quot;&quot;&quot; &amp; sTOC(i, 3) &amp; &quot;#heading_id_&quot; &amp; i &amp; &quot;&quot;&quot;&gt;&quot; &amp; sTOC(i, 1) &amp; &quot;&lt;/a&gt;&lt;/p&gt;&lt;br/&gt;&quot; &amp; CR )	
+			NPtArray( sTOC(i, 2))=NPtArray( sTOC(i, 2))+1	
+			i = i + 1
+		Loop
+	
+		sTOC(iTOCcount + 1, 1) = getPrefValue (&quot;IndexTitle&quot;) 
+		sTOC(iTOCcount + 1, 2) = 1
+		sTOC(iTOCcount + 1, 3) = &quot;toc.xhtml&quot;
+		&apos; FlushClosingTocNavPointTagBuffer (oOutputStream,NPtArray, 1, 2)
+		oOutputStream.writeString( &quot;  &lt;/div&gt;&quot; &amp; CR )
+	 oOutputStream.writeString( &quot; &lt;/body&gt;&quot; &amp; CR )
+	 oOutputStream.writeString( &quot;&lt;/html&gt;&quot; &amp; CR )
+		
+		oOutputStream.flush()
+		oOutputStream.closeOutput()
+	End If
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
+End Sub
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub CreateContentOpfFile (MyEpub As string)
+&apos;---- Create CONTENT.OPF file ----
+
+	Dim i, j, MaxFiles As Integer
+	Dim FileName, FileType, NextFile, FileN, Temp As String
+	Dim oDeskTop As object
+	Dim Swapped As Boolean
+	Dim DirMatrix(10000) As String
+	myLog = myLog &amp; CR &amp; &quot;✔ Start Create Content.opf File&quot;	
+	oDeskTop=CreateUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+	
+
+&apos;-------- Build file -----------
+	Dim Today As String
+	Today = Year(Now) &amp; &quot;-&quot; &amp; Month(Now) &amp; &quot;-&quot; &amp; Day(Now) &amp; &quot;T&quot; &amp; Hour(Now) &amp; &quot;:&quot; &amp; Minute(Now) &amp; &quot;:&quot; &amp; Second(Now) &amp; &quot;+00:00&quot;
+ 	
+	Dim oOutputAccess As Object
+	Dim oOutputStream As Object
+	Dim vOutputData   As Variant
+	oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/content.opf&quot; )
+	oOutputStream.setOutputStream(vOutputData)
+	oOutputStream.setEncoding(&quot;UTF-8&quot;)
+	oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;UTF-8&quot;&quot;?&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;&lt;package xmlns=&quot;&quot;http://www.idpf.org/2007/opf&quot;&quot; unique-identifier=&quot;&quot;BookID&quot;&quot; version=&quot;&quot;2.0&quot;&quot;&gt;&quot; &amp; CR )
+	oOutputStream.writeString(GetMetaXmlBlock(sMyAppName, sVersion,  myUUIDv4 ))
+	oOutputStream.writeString( &quot;  &lt;manifest&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;   &lt;item id=&quot;&quot;ncx&quot;&quot; href=&quot;&quot;toc.ncx&quot;&quot; media-type=&quot;&quot;application/x-dtbncx+xml&quot;&quot;/&gt;&quot; &amp; CR )
+	If FileExists(MyEpubFolder &amp; &quot;/images/&quot;) Then
+		MaxFiles = 1
+		NextFile = Dir(MyEpubFolder &amp; &quot;/images/&quot;)
+		While NextFile &lt;&gt; &quot;&quot;
+			DirMatrix(MaxFiles) =  NextFile
+			NextFile = Dir
+			MaxFiles = MaxFiles + 1
+		WEnd
+		&apos;---- Bubble Sort
+		Swapped = TRUE
+		While Swapped = TRUE
+			Swapped = FALSE
+			For i = 1 To MaxFiles - 1
+				If DirMatrix(i) &gt; DirMatrix(i + 1) Then
+					Temp = DirMatrix(i + 1)
+					DirMatrix(i + 1) = DirMatrix(i)
+					DirMatrix(i) = Temp
+					Swapped = TRUE
+				End If
+			Next i
+		WEnd
+	End If
+	For i = 2 To MaxFiles
+	  Select Case Right(DirMatrix(i), 4)
+	    Case &quot;.png&quot;
+	      FileType = &quot;png&quot;
+	    Case &quot;.gif&quot;
+	      FileType = &quot;gif&quot;
+	    Case &quot;.jpg&quot;
+	      FileType = &quot;jpeg&quot;
+	    Case &quot;jpeg&quot;
+	      FileType = &quot;jpeg&quot;
+	    Case &quot;svg&quot;
+	      FileType = &quot;svg+html&quot;
+	    Case else
+	      MsgBox &quot;image file &quot; &amp; DirMatrix(i) &amp; &quot; NOT SUPPORT BY EPUB!&quot; &amp; CR &amp; &quot;Only .jpeg, .png, .gif and .svg allowed&quot;
+	  End Select
+	  oOutputStream.writeString( &quot;  &lt;item id=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; href=&quot;&quot;images/&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; media-type=&quot;&quot;image/&quot; &amp; FileType &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	Next i
+	oOutputStream.writeString( &quot;  &lt;item id=&quot;&quot;style_epub.css&quot;&quot; href=&quot;&quot;styles/style_epub.css&quot;&quot; media-type=&quot;&quot;text/css&quot;&quot;/&gt;&quot; &amp; CR )
+	Redim DirMatrix(10000)
+	If FileExists(MyEpubFolder &amp; &quot;/text/&quot;) Then
+	  MaxFiles = 1
+	  NextFile = Dir(MyEpubFolder &amp; &quot;/text/&quot;)
+	  While NextFile &lt;&gt; &quot;&quot;
+	    DirMatrix(MaxFiles) = NextFile
+	    NextFile = Dir
+	    MaxFiles = MaxFiles + 1
+	  WEnd
+	  &apos;---- Bubble Sort
+	  Swapped = TRUE
+	  While Swapped = TRUE
+	    Swapped = FALSE
+	    For i = 1 To MaxFiles - 1
+	      If DirMatrix(i) &gt; DirMatrix(i + 1) Then
+	        Temp = DirMatrix(i + 1)
+	        DirMatrix(i + 1) = DirMatrix(i)
+	        DirMatrix(i) = Temp
+	        Swapped = TRUE
+	      End If
+	    Next i
+	  WEnd
+	End If
+	For i = 2 To MaxFiles
+	  &apos;---- If right(DirMatrix(i), 5) = &quot;xhtml&quot; Then
+	  oOutputStream.writeString( &quot;  &lt;item id=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; href=&quot;&quot;text/&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; media-type=&quot;&quot;application/xhtml+xml&quot;&quot;/&gt;&quot; &amp; CR )
+	  &apos;---- End If
+	Next i
+	oOutputStream.writeString( &quot; &lt;/manifest&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;spine toc=&quot;&quot;ncx&quot;&quot;&gt;&quot; &amp; CR )
+	If CoverType &lt;&gt; &quot;None&quot; Then  &apos;If there is an image in the first page, this will be the cover
+&apos;	if isCoverPresent then
+	  oOutputStream.writeString( &quot;  &lt;itemref idref=&quot;&quot;coverpage.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
+	end if
+	For i = 2 To MaxFiles
+	  &apos;---- If right(DirMatrix(i), 5) = &quot;xhtml&quot; Then
+&apos;	  If Left (DirMatrix(i), 9) &lt;&gt; &quot;coverpage&quot; Then
+&apos;	  	oOutputStream.writeString( &quot;        &lt;itemref idref=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+&apos;	  End If
+	  If Left (DirMatrix(i), 9) &lt;&gt; &quot;coverpage&quot; Then
+	  	  If Left (DirMatrix(i), 8) = &quot;footnote&quot; Then
+	  	  	oOutputStream.writeString( &quot;  &lt;itemref idref=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot; linear=&quot;&quot;no&quot;&quot;/&gt;&quot; &amp; CR )
+	  	  Else
+	  		oOutputStream.writeString( &quot;  &lt;itemref idref=&quot;&quot;&quot; &amp; DirMatrix(i) &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR )
+	  	  End If
+	  End If
+	Next i
+	oOutputStream.writeString( &quot; &lt;/spine&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;guide&gt;&quot; &amp; CR )
+	if isCoverPresent then
+		oOutputStream.writeString( &quot;  &lt;reference type=&quot;&quot;cover&quot;&quot; title=&quot;&quot;Cover&quot;&quot; href=&quot;&quot;text/coverpage.xhtml&quot;&quot; /&gt;&quot; &amp; CR )
+	else
+		oOutputStream.writeString( &quot;  &lt;reference type=&quot;&quot;cover&quot;&quot; title=&quot;&quot;Cover Page&quot;&quot; href=&quot;&quot;text/content0001.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
+	end if
+	
+	If getPrefValue (&quot;AddIndex&quot;) = 1 Then &apos; == Nick: Adds html table of content 
+    	oOutputStream.writeString( &quot;  &lt;reference type=&quot;&quot;toc&quot;&quot; title=&quot;&quot;Table of contents&quot;&quot; href=&quot;&quot;text/toc.xhtml&quot;&quot;/&gt;&quot; &amp; CR )
+	End If
+	oOutputStream.writeString( &quot; &lt;/guide&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;&lt;/package&gt;&quot; &amp; CR )
+	oOutputStream.flush()
+	oOutputStream.closeOutput()
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;	
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Sub CreateiTunesMetadata (MyEpub As string)
+&apos;---- Create iTunesMetadata.plist file ----
+
+	Dim i, j, MaxFiles As Integer
+	Dim FileName, FileType, NextFile, FileN, Temp As String
+	Dim oDeskTop As object
+	Dim Swapped As Boolean
+	Dim DirMatrix(10000) As String
+	
+	oDeskTop=CreateUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+	
+
+&apos;-------- Build file -----------
+	Dim Today As String
+	Today = Year(Now) &amp; &quot;-&quot; &amp; Month(Now) &amp; &quot;-&quot; &amp; Day(Now) &amp; &quot;T&quot; &amp; Hour(Now) &amp; &quot;:&quot; &amp; Minute(Now) &amp; &quot;:&quot; &amp; Second(Now) &amp; &quot;+00:00&quot;
+ 	
+	Dim oOutputAccess As Object
+	Dim oOutputStream As Object
+	Dim vOutputData, UDP, PV As Variant
+	
+	UDP =  ThisComponent.DocumentProperties.getUserDefinedProperties()
+	PV = UDP.getPropertyValues() 
+	
+	oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+	vOutputData   = oOutputAccess.openFileWrite( MyEpubFolder &amp; &quot;/iTunesMetadata.plist&quot; )
+	oOutputStream.setOutputStream(vOutputData)
+	oOutputStream.setEncoding(&quot;UTF-8&quot;)
+	oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;UTF-8&quot;&quot;?&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;&lt;!DOCTYPE plist PUBLIC &quot;&quot;-//Apple//DTD PLIST 1.0//EN&quot;&quot; &quot;&quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;&quot;&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;&lt;plist version=&quot;&quot;1.0&quot;&quot;&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;&lt;dict&gt;&quot; &amp; CR)
+	For I = 0 to uBound(PV) 
+		If PV(i).Name=&quot;w2e_MetaAuthor&quot; and (not IsEmpty(PV(i).Value)) Then
+			oOutputStream.writeString( &quot; &lt;key&gt;artistName&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot; &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaAuthor&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+		End If
+	Next
+	oOutputStream.writeString( &quot; &lt;key&gt;book-info&lt;/key&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot; &lt;dict&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;  &lt;key&gt;cover-image-path&lt;/key&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;  &lt;string&gt;OEBPS/Images/cover.jpg&lt;/string&gt;&quot;  &amp; CR)
+	oOutputStream.writeString( &quot;  &lt;key&gt;publisher-unique-id&lt;/key&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UUIDv4 &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot; &lt;/dict&gt;&quot; &amp; CR)
+	For I = 0 to uBound(PV) 
+		If PV(i).Name=&quot;w2e_MetaTitle&quot; and (not IsEmpty(PV(i).Value)) Then
+			oOutputStream.writeString( &quot;  &lt;key&gt;itemName&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; PV(i).Value &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;  &lt;key&gt;playlistName&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaTitle&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+		EndIf
+	Next
+	For I = 0 to uBound(PV) 
+		If PV(i).Name=&quot;w2e_MetaDescription&quot; and (not IsEmpty(PV(i).Value)) Then
+			oOutputStream.writeString( &quot;  &lt;key&gt;comments&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaDescription&quot;) &amp;  &quot;&lt;/string&gt;&quot; &amp; CR)
+		End If
+	Next
+	For I = 0 to uBound(PV) 
+		If PV(i).Name=&quot;w2e_MetaPublishingDate&quot; and (not IsEmpty(PV(i).Value)) Then
+			oOutputStream.writeString( &quot;  &lt;key&gt;releaseDate&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;  &lt;string&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaPublishingDate&quot;) &amp; &quot;&lt;/string&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;  &lt;key&gt;year&lt;/key&gt;&quot; &amp; CR)
+			oOutputStream.writeString( &quot;  &lt;integer&gt;&quot; &amp; UDP.getPropertyValue(&quot;w2e_MetaPublishingDate&quot;) &amp; &quot;&lt;/integer&gt;&quot; &amp; CR)
+		End If
+	Next
+	oOutputStream.writeString( &quot; &lt;/dict&gt;&quot; &amp; CR)
+	oOutputStream.writeString( &quot;&lt;/plist&gt;&quot; &amp; CR)
+	oOutputStream.flush()
+	oOutputStream.closeOutput()
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Sub CreateEpub(MyEpub As String) 
+    
+	myLog = myLog &amp; CR &amp; &quot;✔ Start Create ePub&quot;	
+	Dim sFileToZipUrl As String
+	Dim sZipPackageUrl As String 
+	sFileToZipUrl = ConvertToUrl( MyEpubFolder) 
+	sZipPackageUrl = ConvertToUrl( MyEpub &amp; &quot;.epub&quot; ) 
+	ZipFolder(sFileToZipUrl, sZipPackageUrl ) 
+	&apos;RmDir sFileToZipUrl
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;		
+End sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Sub FlushClosingTocNavPointTagBuffer (oOutputStream As object, CountArray As Integer, EntryIndex As Integer, LayerIndex As Integer)
+	Dim I,J As Integer 
+ J=LayerIndex
+	For I = EntryIndex To 10
+		If CountArray(I) &lt;&gt; 0  Then &apos;maximun one tag for headingN should be open
+			oOutputStream.writeString( Space(J) &amp; &quot; &lt;/navPoint&gt;&quot; &amp; CR )
+			J=J-1
+			CountArray(I)=0
+		End If
+	Next I
+
+End Sub
+
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+sub TextCleaner
+rem ----------------------------------------------------------------------
+rem define variables
+dim document   as object
+dim dispatcher as object
+rem ----------------------------------------------------------------------
+rem get access to the document
+document   = ThisComponent.CurrentController.Frame
+dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+
+rem ----------------------------------------------------------------------
+dim args1(18) as new com.sun.star.beans.PropertyValue
+args1(0).Name = &quot;SearchItem.StyleFamily&quot;
+args1(0).Value = 2
+args1(1).Name = &quot;SearchItem.CellType&quot;
+args1(1).Value = 0
+args1(2).Name = &quot;SearchItem.RowDirection&quot;
+args1(2).Value = true
+args1(3).Name = &quot;SearchItem.AllTables&quot;
+args1(3).Value = false
+args1(4).Name = &quot;SearchItem.Backward&quot;
+args1(4).Value = false
+args1(5).Name = &quot;SearchItem.Pattern&quot;
+args1(5).Value = true
+args1(6).Name = &quot;SearchItem.Content&quot;
+args1(6).Value = false
+args1(7).Name = &quot;SearchItem.AsianOptions&quot;
+args1(7).Value = false
+args1(8).Name = &quot;SearchItem.AlgorithmType&quot;
+args1(8).Value = 0
+args1(9).Name = &quot;SearchItem.SearchFlags&quot;
+args1(9).Value = 65536
+args1(10).Name = &quot;SearchItem.SearchString&quot;
+args1(10).Value = &quot;Intestazione 1&quot;
+args1(11).Name = &quot;SearchItem.ReplaceString&quot;
+args1(11).Value = &quot;Bibliografia 1&quot;
+args1(12).Name = &quot;SearchItem.Locale&quot;
+args1(12).Value = 255
+args1(13).Name = &quot;SearchItem.ChangedChars&quot;
+args1(13).Value = 2
+args1(14).Name = &quot;SearchItem.DeletedChars&quot;
+args1(14).Value = 2
+args1(15).Name = &quot;SearchItem.InsertedChars&quot;
+args1(15).Value = 2
+args1(16).Name = &quot;SearchItem.TransliterateFlags&quot;
+args1(16).Value = 1280
+args1(17).Name = &quot;SearchItem.Command&quot;
+args1(17).Value = 0
+args1(18).Name = &quot;Quiet&quot;
+args1(18).Value = true
+
+dispatcher.executeDispatch(document, &quot;.uno:ExecuteSearch&quot;, &quot;&quot;, 0, args1())
+
+rem ----------------------------------------------------------------------
+dim args2(1) as new com.sun.star.beans.PropertyValue
+args2(0).Name = &quot;Count&quot;
+args2(0).Value = 1
+args2(1).Name = &quot;Select&quot;
+args2(1).Value = false
+
+dispatcher.executeDispatch(document, &quot;.uno:GoDown&quot;, &quot;&quot;, 0, args2())
+
+
+end sub
+
+
+Sub MobiGen
+&apos;---- test mobi creation -----   
+	If myPrefs.getPropertyValue(&quot;MobiExport&quot;) = True Then
+		Dim KindlegenPath As String
+		Dim myCommand As String 
+		KindlegenPath = myPrefs.getPropertyValue(&quot;KindlegenPath&quot;)
+		myCommand=(KindlegenPath &amp; &quot; &quot;&quot;&quot; &amp; ConvertFromURL(MyEpub) &amp; &quot;.epub&quot;&quot; -c2 -gif -verbose&quot;)
+		shell myCommand
+	End If
+End Sub
+</script:module>

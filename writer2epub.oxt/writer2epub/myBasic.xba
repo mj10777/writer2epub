@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="myBasic" script:language="StarBasic">
+
+Dim BoxWidth, BoxHeight As Integer
+
+
+sub paths 
+	msgbox getApplicationFolder 
+end sub
+
+Function getApplicationFolder
+Dim oPathSubstitution
+	oPathSubstitution = CreateUnoService(&quot;com.sun.star.util.PathSubstitution&quot;) 
+&apos;	Dim oPathSettings 
+&apos;	oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;) 
+	getApplicationFolder = oPathSubstitution.getSubstituteVariableValue(&quot;$(inst)&quot;)
+End Function
+
+Sub testme
+	LoadMyLibraries				&apos;load libraries
+
+    initRegistry				&apos;Load or create the registry to store pref values
+
+   	DialogLibraries.LoadLibrary(sMyAppName)
+	dlg=CreateUnoDialog(DialogLibraries.writer2epub.ColorDLG)
+	
+   	Dlg.getControl(&quot;IC_color&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/colors.png&quot;)
+	RegisterMouseListener
+	BoxWidth = Dlg.getControl(&quot;IC_color&quot;).Model.width 
+	BoxHeight = Dlg.getControl(&quot;IC_color&quot;).Model.height
+	Select Case Dlg.Execute()     
+    Case 1
+   		UnregisterMouseListener
+    Case Else
+		UnregisterMouseListener
+    End Select
+	
+End sub
+Sub RegisterMouseListener
+oDocView = dlg.getControl(&quot;IC_color&quot;)
+  oMouseListener = _
+  createUnoListener(&quot;oMouseListener_&quot;, &quot;com.sun.star.awt.XMouseListener&quot;)
+  oDocView.addMouseListener(oMouseListener)
+End Sub
+	
+Sub UnregisterMouseListener
+  on error resume next
+  oDocView.removeMouseListener(oMouseListener)
+  on error goto 0
+End Sub
+
+Function oMouseListener_mousePressed(oEvt) As Boolean
+	Dim sMsg As String
+	With oEvt
+		&apos;If there are any modifiers or the click is with the right button, we ignore.
+		If .Modifiers = 0 and .Buttons = 1 and .ClickCount = 1 and .PopupTrigger = 0 Then
+			Dlg.getControl(&quot;X&quot;).text = Int ((.X / (BoxWidth *1.1) )*8)
+			Dlg.getControl(&quot;Y&quot;).text = Int ((.Y / BoxHeight)*8)
+		End If
+	End With
+    oMouseListener_mousePressed = False
+	Dlg.getControl(&quot;Label&quot;).text=&quot;mouse Pressed&quot;
+End Function
+
+Function oMouseListener_mouseReleased(oEvt) As Boolean
+	oMouseListener_mouseReleased = False
+	Dlg.getControl(&quot;Label&quot;).text=&quot;mouse Released&quot;
+End Function
+
+Function oMouseListener_mouseEntered(oEvt) As Boolean
+	oMouseListener_mouseEntered = False
+	Dlg.getControl(&quot;Label&quot;).text=&quot;mouse Entered&quot;
+End Function
+	
+Function oMouseListener_mouseExited(oEvt) As Boolean
+	oMouseListener_mouseExited = False
+	Dlg.getControl(&quot;Label&quot;).text=&quot;mouse Exited&quot;
+End Function
+
+
+
+
+
+
+
+Sub LoadMyLibraries
+	If NOT GlobalScope.BasicLibraries.isLibraryLoaded( &quot;Tools&quot; ) Then 
+		GlobalScope.BasicLibraries.loadLibrary( &quot;Tools&quot; )
+	End If	
+	
+	&apos;====== XRAY DIAGNOSTIC ============
+	&apos; If the XRAY library is installed, loads it
+	&apos; for more info about XRAY see http://bernard.marcelly.perso.sfr.fr/index2.html
+	
+	If BasicLibraries.hasByName(&quot;XrayTool&quot;) Then	
+		If NOT BasicLibraries.isLibraryLoaded(&quot;XrayTool&quot;) Then 
+			BasicLibraries.LoadLibrary(&quot;XrayTool&quot;)
+		End If
+	End If
+	&apos;===================================
+End Sub
+</script:module>

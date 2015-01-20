@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="DocCheck" script:language="StarBasic">
+&apos;---- This module perform all check on the document before conversion -----
+
+Sub PerformCheck
+	CheckImageCompatibility
+	If myPrefs.getPropertyValue(&quot;HideMessages&quot;) = &quot;False&quot; then
+		CheckStyles
+	End If
+	CleanADEunsupported
+End Sub
+
+Sub CheckStyles
+
+&apos;------ looks for unsupported styles and warnings for it ---------
+&apos;------ Looks for missing headings and warnings for it -------
+
+	Dim AppliedStylesList() As String
+	Dim UnsupportedStyles As String
+	Dim AllStylesList As String
+	Dim supported, HeadingsPresent As Boolean
+	Dim SupportedStylesList(17) As String
+&apos;	cr = chr(13)
+	SupportedStylesList(0) = &quot;Standard&quot;
+	SupportedStylesList(1) = &quot;Text body&quot;
+	SupportedStylesList(2) = &quot;Heading&quot;
+	SupportedStylesList(3) = &quot;Heading 1&quot;
+	SupportedStylesList(4) = &quot;Heading 2&quot;
+	SupportedStylesList(5) = &quot;Heading 3&quot;
+	SupportedStylesList(6) = &quot;Heading 4&quot;
+	SupportedStylesList(7) = &quot;Heading 5&quot;
+	SupportedStylesList(8) = &quot;Heading 6&quot;
+	SupportedStylesList(9) = &quot;Title&quot;
+	SupportedStylesList(10) = &quot;Subtitle&quot;
+	SupportedStylesList(11) = &quot;Caption&quot;
+	SupportedStylesList(12) = &quot;Quotations&quot;
+	SupportedStylesList(13) = &quot;Marginalia&quot;
+	SupportedStylesList(14) = &quot;Illustration&quot;
+	SupportedStylesList(15) = &quot;Horizontal Line&quot;
+	SupportedStylesList(16) = &quot;Footnote&quot;
+	SupportedStylesList(17) = &quot;Preformatted Text&quot;
+&apos;	SupportedStylesList(18) = &quot;&quot;
+&apos;	SupportedStylesList(19) = &quot;&quot;
+&apos;	SupportedStylesList(20) = &quot;&quot;
+&apos;	SupportedStylesList(21) = &quot;&quot;
+&apos;	SupportedStylesList(22) = &quot;&quot;
+&apos;	SupportedStylesList(23) = &quot;&quot;
+&apos;	SupportedStylesList(24) = &quot;&quot;
+&apos;	SupportedStylesList(25) = &quot;&quot;
+&apos;	SupportedStylesList(26) = &quot;&quot;
+&apos;	SupportedStylesList(27) = &quot;&quot;
+	
+	AppliedStylesList() = getStyleNames(thiscomponent.StyleFamilies.getByName(&quot;ParagraphStyles&quot;),False, True)
+	UnsupportedStyles = &quot;&quot;
+	For I = Lbound(AppliedStylesList) to ubound(AppliedStylesList)
+		supported = false
+		For j = Lbound(SupportedStylesList) To ubound (SupportedStylesList)
+			If AppliedStylesList(i) = SupportedStylesList(j) then
+				supported = true
+			End If
+			If Lcase(Left(AppliedStylesList(i),4)) = &quot;w2e_&quot; then
+				supported = true
+			End If
+			If Left(AppliedStylesList(i), 8) = &quot;Heading &quot; Then
+				HeadingsPresent = True
+			End If
+		Next j
+		If supported = false then
+			UnsupportedStyles = UnsupportedStyles &amp; CR &amp; AppliedStylesList(i)
+			AllStylesList = AllStylesList &amp; CR &amp; &quot;* &quot; &amp; AppliedStylesList(i)
+		Else
+			AllStylesList = AllStylesList &amp; CR &amp; AppliedStylesList(i)
+		End If
+	Next I
+	If UnsupportedStyles &lt;&gt; &quot;&quot; Then
+		Msgbox unsupportedStylesMSG &amp; CR &amp; UnsupportedStyles, 64
+	End If
+	If HeadingsPresent = False Then
+		Msgbox noHeadingsPresentMSG, 64
+	End If
+	
+	
+&apos;Dim oStileCar,oStilePar
+
+&apos;	oStileCar=thisComponent.StyleFamilies.getByName(&quot;CharacterStyles&quot;).getByName(&quot;dd&quot;)
+&apos;	oStilePar=thisComponent.StyleFamilies.getByName(&quot;ParagraphStyles&quot;).getByName(&quot;VitStile&quot;)
+End Sub
+
+&apos;_______________________________________________________________________________________
+
+
+Sub CleanADEunsupported
+
+&apos;--- this routine replaces some unsupported characters with equivant ones
+	Repl (chr(8210),chr(8722)) &apos; 
+	Repl (chr(8213), chr(8212))
+	
+End Sub
+
+
+&apos;_______________________________________________________________________________________
+
+Sub CheckImageCompatibility
+	
+	Dim oDocument As Object
+	Dim oGraphics As Object
+	Dim oZipArchive As Object
+	Dim oPictures As Object
+	Dim mZipFile(0) As Variant
+	Dim mFiles() As String
+	Dim mData() As Variant
+	Dim sDestFolder As String
+	Dim sGraphicName As String
+	Dim sGraphicURL As String
+	Dim sWrongList As String
+	
+	Dim i As Integer
+	Dim j As Integer
+
+	On Local Error Resume Next &apos;workaround for phantom images
+
+	oDocument = StarDesktop.getCurrentComponent
+
+	oZipArchive = CreateUnoService(&quot;com.sun.star.packages.Package&quot;)
+	&apos; open zip file and get content of &quot;Pictures&quot; folder ...
+ 	oZipArchive = createUnoService(&quot;com.sun.star.packages.Package&quot;)
+	mZipFile(0) = oDocument.URL
+	oZipArchive.initialize(mZipFile())
+
+	if oZipArchive.hasByHierarchicalName(&quot;Pictures&quot;) then
+		oPictures = oZipArchive.getByHierarchicalName(&quot;Pictures&quot;)
+		mFiles() = oPictures.getElementNames
+	end if
+
+
+	
+&apos;------- loop through images --------
+	
+	For i = 0 to uBound(mFiles())
+	
+		n = -1
+		mylen = 0
+		
+&apos;------- check image extension --------
+	oGraphics = oDocument.getGraphicObjects
+
+	sGraphicURL = oGraphics.getByIndex(i).GraphicURL
+		Select case right(mFiles(j), 3)
+		Case &quot;png&quot;, &quot;jpg&quot;, &quot;gif&quot;, &quot;svg&quot;
+		Case Else
+			sWrongList = sWrongList &amp; oGraphics.getByIndex(i).name &amp; &quot;.&quot; &amp; right(mFiles(j), 3) &amp; CR
+		End Select
+		
+&apos;------- check image dimension --------
+
+&apos; 		sFileUrlO = sGraphicURL
+&apos;		sGraphicName = sGraphicURL
+&apos;		Do While InStr(1,sGraphicName,&quot;/&quot;)
+&apos;				sGraphicName = Mid(sGraphicName,InStr(1,sGraphicName,&quot;/&quot;)+1,Len(sGraphicName)
+&apos;		Loop
+
+
+&apos;		oInputStream = oPictures.getByName(mFiles(i)).getInputStream()
+&apos;		While n &lt;&gt; 0
+&apos;			n =	oInputStream.readBytes(mData, 1)
+&apos;			mylen = mylen+1
+&apos;		Wend
+&apos;		Select Case mylen
+&apos;		Case &gt; 0
+&apos;			sWrongList = sWrongList &amp; oGraphics.getByIndex(i).name &amp; &quot;.&quot; &amp; right(mFiles(j), 3) &amp; &quot;: &quot; &amp; mylen &amp; &quot; bytes&quot; &amp; CR
+&apos;		End Select
+&apos;		oInputStream.closeInput()
+&apos;		ReDim mData() As Variant
+
+	Next i
+	If sWrongList &lt;&gt; &quot;&quot; Then
+		MsgBox &quot;Image Format not supported!&quot; &amp; cr &amp; sWrongList
+		sWrongList = &quot;&quot;
+	End If
+	
+End Sub
+
+&apos;=========== only trash under this line! =================================
+
+Sub DisplayAllStyles
+  Dim mFamilyNames As Variant, mStyleNames As Variant
+  Dim sMsg As String, n%, i%
+  Dim oFamilies As Object, oStyle As Object, oStyles As Object
+  
+  oFamilies = ThisComponent.StyleFamilies
+  mFamilyNames = oFamilies.getElementNames()
+&apos;  For n = LBound(mFamilyNames) To UBound(mFamilyNames)
+    sMsg = &quot;&quot;
+    oStyles = oFamilies.getByName(&quot;ParagraphStyles&quot;)
+    mStyleNames = oStyles.getElementNames()
+    For i = LBound(mStyleNames) To UBound (mStyleNames)
+      sMsg=sMsg + i + &quot; : &quot; + mStyleNames(i) + CR
+      If ((i + 1) Mod 21 = 0) Then
+        MsgBox sMsg,0,mFamilyNames(n)
+        sMsg = &quot;&quot;
+      End If
+    Next i
+    MsgBox sMsg,0,mFamilyNames(n)
+&apos;  Next n
+End Sub
+
+
+sub MainRemoveUnusedStyles()
+&apos;calls: RemoveUnusedStyles
+Dim sElements() as string, oFamilies, oFamily, sFamily$, sLabel, oDlg, i%
+oFamilies = thiscomponent.StyleFamilies
+sElements() = oFamilies.getElementNames()
+For i = 0 to uBound(sElements())
+   oFamily = oFamilies.getByName(sElements(i))
+   RemoveUnusedStyles(oFamily,sElements(i),True)
+Next
+End Sub
+
+Sub RemoveUnusedStyles(oFamily,sFamily as string, bAsk as Boolean)
+&apos;calls: getStyleNames
+Dim sUsed() as String, sMsg$,iAnswer%, bStop as boolean
+sUsed() = getStyleNames(oFamily,bLocalized:=False,bUsed:=False,bUserDef:=true)
+If uBound(sUsed()) &gt; -1 then
+   bStop = false
+   For i = 1 To UBound(sUsed())+1
+      sMsg = sMsg + i + &quot; : &quot; + sUsed(i-1) + CHR$(10)
+      If ((i) Mod 30 = 0) Then
+         iAnswer = MsgBox(&quot;Remove following &quot; + sFamily + CHR$(10) + sMsg,33,&quot;Remove Unused Styles&quot;)
+         sMsg = &quot;&quot;
+         If iAnswer &lt;&gt;1 then
+            bStop = true
+            exit For
+         End If
+      EndIf
+   Next i
+   If not bStop then
+      iAnswer = MsgBox(&quot;Remove following &quot; + sFamily + CHR$(10) + sMsg, 33, &quot;Remove Unused Styles&quot;)
+      If iAnswer = 1 then
+         For i = 0 to uBound(sUsed())
+            oFamily.removeByName(sUsed(i))
+         Next
+      EndIf
+   EndIf
+EndIf
+End Sub
+
+&apos;calls: bas_PushArray
+&apos;returns: a string-array of style-names
+&apos;oFamily:= a style family, derived from a doc (writer,calc,draw,impress)
+&apos;bLocalized:= return localized names of the builtin styles (eg. builtin &quot;Default&quot; --&gt; german &quot;Standard&quot;)
+&apos;bUsed:= only used styles. true/false for used/unused, missing for all
+&apos;bUserDef:= only builtin styles. true/false for userDefined/Builtin, missing for all
+Function getStyleNames(oFamily,bLocalized as Boolean, optional bUsed, optional bUserDef)
+Dim oStyle,i%,sNames$(),sName$,chkUse as Boolean, chkUDef as Boolean
+For i = 0 to oFamily.getCount -1
+   oStyle = oFamily.getByIndex(i)
+   If bLocalized then
+      sName = oStyle.DisplayName
+   Else
+      sName = oStyle.getName
+   Endif
+   If (vartype(bUsed) = 11)then
+      chkUse = (bUsed EQV oStyle.isInUse)
+   Else
+      chkUse = True
+   Endif
+   If (vartype(bUserDef) = 11) then
+      chkUDef = (bUserDef EQV oStyle.isUserDefined)
+   Else
+      chkUDef = True
+   Endif
+   If chkUse AND chkUDef then
+      bas_Pusharray sNames(),sName
+   Endif
+Next
+getStyleNames = sNames()
+End Function
+
+&apos;very simple routine appending some element to an array which can be undimensioned (LBound &gt; UBound)
+Sub bas_PushArray(xArray(),vNextElement)
+Dim iUB%,iLB%
+iLB = lBound(xArray())
+iUB = uBound(xArray())
+If iLB &gt; iUB then
+   iUB = iLB
+   redim xArray(iLB To iUB)
+Else
+   iUB = iUB +1
+   redim preserve xArray(iLB To iUB)
+Endif
+xArray(iUB) = vNextElement
+End Sub
+
+
+
+
+sub grancasino
+rem ----------------------------------------------------------------------
+rem define variables
+
+ Dim oEnum &apos;com.sun.star.container.XEnumerationAccess
+ Dim oPar &apos;Paragraph of some sort
+ Dim nPars As Integer &apos;Number of paragraphs
+ Dim s As String
+ Dim oRules
+ Dim oX
+ Dim i As Integer
+ On Error Resume Next
+
+
+ oEnum = ThisComponent.Text.createEnumeration()
+ Do While oEnum.hasMoreElements()
+   oPar = oEnum.nextElement()
+   REM The returned paragraph will be a paragraph or a text table
+   If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+&apos;    MsgBox	oPar.getString()
+     nPars = nPars + 1
+     If IsNull(oPar.NumberingStyleName) Then
+       s = &quot;&quot;
+     ElseIf IsEmpty(oPar.NumberingStyleName) Then
+       s = &quot;&quot;
+     ElseIf Len(oPar.NumberingStyleName) = 0 Then
+       s = &quot;&quot;
+     Else
+       s = &quot;Num style = &quot; &amp; oPar.NumberingStyleName &amp; CR &amp; _
+             &quot; Automatic = &quot; &amp; oPar.NumberingRules.IsAutomatic &amp; CR &amp; _
+             &quot; Level = &quot; &amp; oPar.NumberingLevel
+
+       s = s &amp; CHR$(10)
+       oRules = oPar.NumberingRules
+       oX = oRules.getByIndex(oPar.NumberingLevel)
+       For i=LBound(oX) To UBound(oX)
+         s = s &amp; oX(i).Name &amp; &quot; = &quot;
+         s = s &amp; oX(i).Value
+         s = s &amp; CHR$(10)
+       Next
+       
+&apos;       if oRules.NumberingIsOutline=False then
+       
+
+&apos;	   end if
+     End If
+   End If
+ Loop
+
+end sub
+
+
+
+</script:module>

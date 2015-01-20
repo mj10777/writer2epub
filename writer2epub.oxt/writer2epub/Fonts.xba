@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Fonts" script:language="StarBasic">Sub ListFonts 
+  Dim oFrame 
+  Dim oDescript 
+  Dim s As String 
+  Dim i As Integer 
+  
+  oFrame = ThisComponent.getCurrentController().getFrame() 
+  oDescript = oFrame.getContainerWindow().getFontDescriptors() 
+  s = &quot;&quot; 
+
+  For i = LBound(oDescript) to  UBound(oDescript) 
+    s = s &amp; oDescript(i).Name &amp; &quot; - &quot; &amp; oDescript(i).StyleName &amp; chr(13) 
+  Next 
+  MsgBox s 
+End Sub
+
+
+REM  *****  BASIC  ***** 
+
+&apos;A BASIC program for OpenOffice.org that creates a text document with a sample of each available font 
+&apos;Copyright (C) 2006 John Hunt 
+
+&apos;Much of this was derived from code (C) 2004 Andrew Ziem found at 
+&apos;&lt;http://www.oooforum.org/forum/viewtopic.phtml?t=14900&gt;. 
+&apos;Some his code was derived from code to enumerate fonts from Paul Sobolik (psobolik@lycos.com) 
+&apos;found in &lt;http://www.pitonyak.org/AndrewMacro.sxw&gt;. 
+
+&apos;This program is free software; you can redistribute it and/or 
+&apos;modify it under the terms of the GNU General Public License 
+&apos;as published by the Free Software Foundation; either version 2 
+&apos;of the License, or (at your option) any later version. 
+
+&apos;This program is distributed in the hope that it will be useful, 
+&apos;but WITHOUT ANY WARRANTY; without even the implied warranty of 
+&apos;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+&apos;GNU General Public License for more details. 
+
+&apos;You should have received a copy of the GNU General Public License 
+&apos;along with this program; if not, write to the Free Software 
+&apos;Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. 
+
+&apos; Tested in OOo 2.0 under Mandriva Linux 2006 
+
+option explicit
+
+
+Sub Main 
+   const LINE_BREAK = 1 
+   const APPEND_PARAGRAPH = 5 
+    
+   Dim oTextDocument As Object 
+   Dim oDesktop As Object 
+   Dim sUrl As String 
+   Dim oText As Object 
+   Dim oCursor As Object 
+   dim sFullName as string, sNames as variant, vSortedIndex as variant, sLastFullName as string 
+   dim sFontName as string, sLastFontName as string 
+    
+   oDesktop = createUnoService(&quot;com.sun.star.frame.Desktop&quot;) 
+   sUrl = &quot;private:factory/swriter&quot; 
+   oTextDocument = oDesktop.loadComponentFromURL(sURL, &quot;_blank&quot;, 0, array()) 
+    
+   oText = oTextDocument.Text 
+   oCursor = oText.createTextCursor() 
+   oCursor.CharHeight = 10 
+    
+   Dim oFontDescriptors As Variant 
+   oFontDescriptors = getFontDescriptors() 
+
+   Dim oFontDescriptor As Object 
+   
+
+        
+   &apos; disable spell checking 
+   dim aLocale as new com.sun.star.lang.Locale 
+   aLocale.Language = &quot;&quot; 
+   aLocale.Country = &quot;&quot; 
+   oCursor.CharLocale = aLocale 
+    
+   Dim i as Integer 
+  
+     &apos; list all the font names 
+   sNames = DimArray(UBound(oFontDescriptors) - LBound(oFontDescriptors))   &apos; zero based 
+
+   For i = LBound(oFontDescriptors) To UBound(oFontDescriptors) 
+      oFontDescriptor = oFontDescriptors(i) 
+       with oFontDescriptor 
+          sFullName =  &quot;  (&quot; &amp; .Name 
+          If (100 &lt; .Weight) Then sFullName = sFullName &amp; &quot; bold&quot; 
+          If (com.sun.star.awt.FontSlant.OBLIQUE = .Slant) Then sFullName = sFullName &amp; &quot; oblique&quot; 
+          If (com.sun.star.awt.FontSlant.ITALIC = .Slant) Then sFullName = sFullName &amp; &quot; italic&quot; 
+           sFullName = sFullName &amp; &quot;)&quot; 
+      end with    
+      sNames(i - LBound(oFontDescriptors)) = sFullName 
+   next 
+  
+     &apos; sort the font names 
+   vSortedIndex = ArraySortIndexed(sNames) 
+
+   &apos; output font names and sample text in sorted order 
+   For i = LBound(vSortedIndex) To UBound(vSortedIndex) 
+        sFullName = sNames(vSortedIndex(i)) 
+        if sFullName &lt;&gt; sLastFullName then   &apos; my Linux system lists some fonts twice 
+           sLastFullName = sFullName 
+          oFontDescriptor = oFontDescriptors(vSortedIndex(i)) 
+          
+          with oFontDescriptor 
+             sFontName = .Name 
+             if sLastFontName &lt;&gt; sFontName and sLastFontName&lt;&gt;&quot;&quot; then 
+                &apos; leave some white space between fonts for legibility 
+                SetArial(oCursor) 
+               oText.insertControlCharacter(oCursor, APPEND_PARAGRAPH, 0) 
+             endif 
+             sLastFontName = sFontName 
+              
+             SetFont(oCursor, oFontDescriptor) 
+             oText.insertString(oCursor, sFontName, FALSE) 
+          
+            SetArial(oCursor) 
+             oText.insertString(oCursor, sFullName, FALSE) 
+             oText.insertControlCharacter(oCursor, LINE_BREAK, 0) 
+             
+             SetFont(oCursor, oFontDescriptor) 
+             oText.insertString(oCursor, TestChars(), FALSE) 
+             
+            SetArial(oCursor) 
+             oText.insertControlCharacter(oCursor, APPEND_PARAGRAPH, 0)    
+             
+         end with 
+      endif 
+   Next i 
+End Sub 
+
+function getFontDescriptors() as variant 
+   Dim oToolkit as Object 
+   Dim oDevice as Variant 
+
+   oToolkit = CreateUnoService(&quot;com.sun.star.awt.Toolkit&quot;) 
+   oDevice = oToolkit.createScreenCompatibleDevice(0, 0) 
+   getFontDescriptors = oDevice.FontDescriptors 
+end function    
+
+private sub SetArial(oCursor as object) 
+   with oCursor 
+       .charFontName = &quot;Arial&quot; 
+       .CharWeight = 0 
+       .CharPosture = 0 
+   end with 
+end sub 
+
+private sub SetFont(oCursor as object, oFontDescriptors As Variant) 
+   with oCursor 
+      .charFontName = oFontDescriptors.Name 
+      .CharWeight = oFontDescriptors.Weight 
+      .CharPosture = oFontDescriptors.Slant 
+   end with 
+end sub 
+
+private function TestChars() as string 
+   static rslt as string 
+   dim i as long 
+    
+   if rslt=&quot;&quot; then 
+      for i = 33 to 126 
+         if chr(i) = &quot;0&quot; or ucase(chr(i)) = &quot;A&quot; then rslt = rslt &amp; &quot; &quot; 
+         rslt = rslt &amp; chr(i) 
+         if chr(i) = &quot;9&quot; or ucase(chr(i)) = &quot;Z&quot; then rslt = rslt &amp; &quot; &quot; 
+      next 
+      rslt = rslt &amp;  &quot; $�� ���秿��&quot;   &apos; some example specials 
+   endif 
+
+   TestChars = rslt 
+end function    
+
+
+&apos; Sort an array.  Array elements can be anything for which 
+&apos; the &gt; operator works. Returns an array of indices that when 
+&apos; used to access the array put the array elements in order. 
+&apos; The input array need not be zero based. The returned array is 
+&apos; always zero based. 
+&apos; Uses Shell sort; simple and much quicker than bubble sort. 
+
+function ArraySortIndexed(vaArray As Variant)as variant 
+
+    Dim i As Long, iGap As Long, bNoExch As Boolean, iTemp As long 
+    dim iUB as long, iLB as long 
+   dim rslt as variant 
+
+   iUB = UBound(vaArray, 1) 
+   iLB = LBound(vaArray, 1) 
+
+   if iUB - iLB + 1 = 0 then 
+      rslt = array() 
+   else 
+      &apos; dimarray cannot create an empty array, and is always zero based 
+      rslt = DimArray(iUB - iLB)    
+   endif 
+    
+   for i = iLB to iUB 
+      rslt(i - iLB) = i 
+   next 
+    
+    iGap = (iUB - iLB + 1) \ 2 
+
+    Do 
+        Do 
+            bNoExch = True 
+            For i = 0 To UBound(rslt) - iGap 
+                If vaArray(rslt(i)) &gt; vaArray(rslt(i + iGap)) Then 
+                    iTemp = rslt(i) 
+                    rslt(i) = rslt(i + iGap) 
+                    rslt(i + iGap) = iTemp 
+                    bNoExch = False 
+                End If 
+            Next 
+        Loop Until bNoExch 
+        iGap = iGap \ 2 
+    Loop Until iGap = 0 
+    
+    ArraySortIndexed = rslt 
+    
+End function 
+</script:module>

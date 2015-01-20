@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Prefs" script:language="StarBasic">REM  *****  BASIC  *****
+&apos; Persistent preferences handling routines
+&apos; By Luca Calcinai
+	
+	Dim oCt, oCtl, Object
+	Dim dlg As Object
+	Dim vRegistryFactory As Variant 
+	Dim vRegistry As Variant 
+	Dim myPropValues As Variant
+	Dim props(2) As New com.sun.star.beans.PropertyValue
+	
+Sub PrefMain
+
+&apos;On Error Goto errorhandler	
+	initRegistry &apos;Load or create the registry to store pref values
+
+	
+&apos;Proceed:	
+	DialogLibraries.LoadLibrary(sMyAppName)
+	dlg=CreateUnoDialog(DialogLibraries.writer2epub.PrefDLG)
+&apos;	dlg.Model=dlg.model
+	
+	dlg.setVisible(true)
+	
+	LocalizePrefDLG
+
+	LoadPreferences
+	Select Case Dlg.Execute() 	
+	Case 1
+		savePreferences
+	Case 0 
+	End Select
+	
+	dlg.setVisible(false)
+	dlg.dispose()
+	Exit sub
+errorhandler:
+	MsgBox &quot;Registry inconsistency. Rebuild Registry&quot;
+	RemoveRegistry
+&apos;	Resume Proceed
+End Sub
+
+Sub LocalizePrefDLG
+	Dlg.getControl(&quot;OkBTN&quot;).label = OkMSG
+	Dlg.getControl(&quot;CancelBTN&quot;).label = CancelMSG
+	Dlg.getControl(&quot;VersionLabel&quot;).text = &quot;Version &quot; &amp; sVersion &amp; &quot; &quot;
+End Sub
+
+
+Sub loadPreferences
+	If myPrefs.getPropertyValue(&quot;KeepWF&quot;)= &quot;False&quot; then
+		dlg.getControl(&quot;CB_KeepWF&quot;).state = 0
+	Else
+		dlg.getControl(&quot;CB_KeepWF&quot;).State = 1
+	End If
+	If myPrefs.getPropertyValue(&quot;Signature&quot;)= &quot;True&quot; then
+		dlg.getControl(&quot;CB_Signature&quot;).State = 1
+	Else
+		dlg.getControl(&quot;CB_Signature&quot;).State = 0
+	End If
+	If myPrefs.getPropertyValue(&quot;ShowMetaWindow&quot;)= &quot;True&quot; then
+		dlg.getControl(&quot;CB_ShowMetaWindow&quot;).State = 1
+	Else
+		dlg.getControl(&quot;CB_ShowMetaWindow&quot;).State = 0
+	End If
+	If myPrefs.getPropertyValue(&quot;HideMessages&quot;)= &quot;True&quot; then
+		dlg.getControl(&quot;CB_HideMessages&quot;).State = 1
+	Else
+		dlg.getControl(&quot;CB_HideMessages&quot;).State = 0
+	End If
+	If myPrefs.getPropertyValue(&quot;CloseDocument&quot;)= &quot;True&quot; then
+		dlg.getControl(&quot;CB_CloseDocument&quot;).State = 1
+	Else
+		dlg.getControl(&quot;CB_CloseDocument&quot;).State = 0
+	End If
+	If myPrefs.getPropertyValue(&quot;MobiExport&quot;)= &quot;True&quot; then
+		dlg.getControl(&quot;CB_MobiExport&quot;).State = 1
+	Else
+		dlg.getControl(&quot;CB_MobiExport&quot;).State = 0
+	End If
+	dlg.getControl(&quot;TF_KindlegenPath&quot;).text = myPrefs.getPropertyValue(&quot;KindlegenPath&quot;)
+	dlg.getControl(&quot;TF_Pattern&quot;).text = myPrefs.getPropertyValue(&quot;Pattern&quot;)
+	dlg.getControl(&quot;NF_MaxImageDim&quot;).text = myPrefs.getPropertyValue(&quot;MaxImageDim&quot;)
+End Sub
+
+
+
+Sub savePreferences
+	If dlg.getControl(&quot;CB_KeepWF&quot;).state = 1 Then
+		myPrefs.setPropertyValue(&quot;KeepWF&quot;, &quot;True&quot;)
+	Else
+		myPrefs.setPropertyValue(&quot;KeepWF&quot;, &quot;False&quot;)
+	End If
+	If dlg.getControl(&quot;CB_Signature&quot;).state =0 Then
+		myPrefs.setPropertyValue(&quot;Signature&quot;, &quot;False&quot;)
+	Else
+		myPrefs.setPropertyValue(&quot;Signature&quot;, &quot;True&quot;)
+	End If
+	If dlg.getControl(&quot;CB_ShowMetaWindow&quot;).state =0 Then
+		myPrefs.setPropertyValue(&quot;ShowMetaWindow&quot;, &quot;False&quot;)
+	Else
+		myPrefs.setPropertyValue(&quot;ShowMetaWindow&quot;, &quot;True&quot;)
+	End If
+	If dlg.getControl(&quot;CB_HideMessages&quot;).state =0 Then
+		myPrefs.setPropertyValue(&quot;HideMessages&quot;, &quot;False&quot;)
+	Else
+		myPrefs.setPropertyValue(&quot;HideMessages&quot;, &quot;True&quot;)
+	End If
+	If dlg.getControl(&quot;CB_CloseDocument&quot;).state =0 Then
+		myPrefs.setPropertyValue(&quot;CloseDocument&quot;, &quot;False&quot;)
+	Else
+		myPrefs.setPropertyValue(&quot;CloseDocument&quot;, &quot;True&quot;)
+	End If
+	If dlg.getControl(&quot;CB_MobiExport&quot;).state =0 Then
+		myPrefs.setPropertyValue(&quot;MobiExport&quot;, &quot;False&quot;)
+	Else
+		myPrefs.setPropertyValue(&quot;MobiExport&quot;, &quot;True&quot;)
+	End If
+	myPrefs.setPropertyValue(&quot;KindlegenPath&quot;, dlg.getControl(&quot;TF_KindlegenPath&quot;).text)
+&apos;	myPrefs.setPropertyValue(&quot;SplitFilesEvery&quot;, dlg.getControl(&quot;NF_SplitFilesEvery&quot;).text)
+	myPrefs.setPropertyValue(&quot;Pattern&quot;, dlg.getControl(&quot;TF_Pattern&quot;).text)
+	myPrefs.setPropertyValue(&quot;MaxImageDim&quot;, dlg.getControl(&quot;NF_MaxImageDim&quot;).text)
+End Sub
+
+
+
+&apos;___Registry Database Initialization_______________________________________________________
+
+Sub initRegistry
+initPrefs
+On Error Goto errorhandler &apos; It try to create new property, if present gets an error and resume next line
+		
+	vRegistryFactory = CreateUnoService(&quot;com.sun.star.ucb.Store&quot;)	&apos;the RegistryFactory has only one purpose, creating a property set registry 
+	vRegistry = vRegistryFactory.createPropertySetRegistry(sMyAppName) 
+	
+		&apos;the Registry has several valuable methods: 
+		&apos;1) openPropertySet( &lt;name&gt;, &lt;bool&gt; ) TRUE: create one if it doesn&apos;t exist 
+		&apos;2) removePropertySet( &lt;name&gt; ) 
+		&apos;3) hasByName( &lt;name&gt; ) e.g. vRegistry.hasByName( &quot;tomsStorage&quot; ) 
+	
+&apos;	If vRegistry.hasByName(sMyAppName) = false  Then &apos;create registry set if desn&apos;t exists
+		myPrefs = vRegistry.openPropertySet(sMyAppName, TRUE) 	
+		REM define properties before using them, do this only once per property or an exception is thrown 
+		&apos;com.sun.star.beans.PropertyAttribute.REMOVEABLE = 128
+		myPrefs.addProperty( &quot;KeepWF&quot;, 128, &quot;False&quot;) 
+		myPrefs.addProperty( &quot;Signature&quot;, 128, &quot;True&quot;) 
+		myPrefs.addProperty( &quot;ShowMetaWindow&quot;, 128, &quot;True&quot;)
+		myPrefs.addProperty( &quot;HideMessages&quot;, 128, &quot;False&quot;)
+		myPrefs.addProperty( &quot;CloseDocument&quot;, 128, &quot;False&quot;)
+		myPrefs.addProperty( &quot;MobiExport&quot;, 128, &quot;False&quot;)
+		myPrefs.addProperty( &quot;KindlegenPath&quot;, 128, &quot;&quot;)
+		myPrefs.addProperty( &quot;Pattern&quot;, 128, &quot;A - T - P - Y&quot;)
+		myPrefs.addProperty( &quot;MaxImageDim&quot;, 128, &quot;150&quot;)
+	Exit Sub
+errorhandler:
+	Resume Next
+End Sub
+
+Sub initPrefs
+	
+End Sub
+
+Sub ResetRegistry
+	dlg.getControl(&quot;CB_KeepWF&quot;).state = 0
+	myPrefs.setPropertyValue(&quot;KeepWF&quot;, &quot;False&quot;)
+	dlg.getControl(&quot;CB_ShowMetaWindow&quot;).state = 1
+	myPrefs.setPropertyValue(&quot;ShowMetaWindow&quot;, &quot;True&quot;)
+	dlg.getControl(&quot;CB_HideMessages&quot;).state = 0 
+	myPrefs.setPropertyValue(&quot;HideMessages&quot;, &quot;False&quot;)
+	dlg.getControl(&quot;CB_CloseDocument&quot;).state = 0 
+	myPrefs.setPropertyValue(&quot;CloseDocument&quot;, &quot;False&quot;)
+	dlg.getControl(&quot;CB_MobiExport&quot;).state = 0 
+	myPrefs.setPropertyValue(&quot;MobiExport&quot;, &quot;False&quot;)
+	dlg.getControl(&quot;TF_Pattern&quot;).text = &quot;A - T - P - Y&quot;	
+	myPrefs.setPropertyValue(&quot;Pattern&quot;, dlg.getControl(&quot;TF_Pattern&quot;).text)
+	dlg.getControl(&quot;TF_KindlegenPath&quot;).text = &quot;&quot;
+	myPrefs.setPropertyValue(&quot;KindlegenPath&quot;, dlg.getControl(&quot;TF_KindlegenPath&quot;).text)
+	dlg.getControl(&quot;NF_MaxImageDim&quot;).text = &quot;150&quot;
+	myPrefs.setPropertyValue(&quot;MaxImageDim&quot;, dlg.getControl(&quot;NF_MaxImageDim&quot;).text)
+End Sub
+
+
+
+
+Sub RemoveRegistry 
+
+	Dim vRegistryFactory As Variant 
+	Dim vRegistry As Variant 
+	Dim myPropValues As Variant
+	Dim props(2) As New com.sun.star.beans.PropertyValue
+	
+	vRegistryFactory = CreateUnoService(&quot;com.sun.star.ucb.Store&quot;)
+	&apos;the RegistryFactory has only one purpose, creating a property set registry 
+	vRegistry = vRegistryFactory.createPropertySetRegistry(sMyAppName) 
+	
+		&apos; the Registry has several valuable methods: 
+		&apos;1) openPropertySet( &lt;name&gt;, &lt;bool&gt; ) TRUE: create one if it doesn&apos;t exist 
+		&apos;2) removePropertySet( &lt;name&gt; ) 
+		&apos;3) hasByName( &lt;name&gt; ) e.g. vRegistry.hasByName( &quot;tomsStorage&quot; ) 
+			
+	myPrefs = vRegistry.removePropertySet(sMyAppName)
+
+End Sub
+
+
+
+
+Sub ShellSort(myList()) 
+	Dim k1 As Long, k2 As Long, listSize As Long 
+	Dim x1 As Long, isSorted As Boolean 
+	Dim swapping 
+	listSize = UBound(myList()) +1 -LBound(myList()) 
+	k1 = Fix(listSize /2) 
+	do while k1 &gt; 0 
+	  k2 = UBound(myList()) - k1 
+	  isSorted = true 
+	  for x1 = LBound(myList()) to k2 
+	    if StrComp(myList(x1), myList(x1 +k1), 0) = 1  then 
+	      swapping = myList(x1) 
+	      myList(x1) = myList(x1 +k1) 
+	      myList(x1 +k1) = swapping 
+	      isSorted = false 
+	    end if 
+	  next 
+	  if isSorted then 
+	    k1 = Fix(k1 /2) 
+	  end if 
+	loop 
+	
+	For i = LBound(myList())+1  To UBound(myList())
+		If myList(i-1) = myList(i) Then
+			myList(i-1) = &quot;&quot;
+		End If
+	Next i
+End Sub
+
+&apos;==================== Developement use only ====================================
+
+Sub RemoveProperty
+	Dim vRegistryFactory As Variant 
+	Dim vRegistry As Variant 
+	Dim myPropValues As Variant
+	Dim props(2) As New com.sun.star.beans.PropertyValue
+	
+	vRegistryFactory = CreateUnoService(&quot;com.sun.star.ucb.Store&quot;)
+	&apos;the RegistryFactory has only one purpose, creating a property set registry 
+	vRegistry = vRegistryFactory.createPropertySetRegistry(sMyAppName) 
+	
+		&apos; the Registry has several valuable methods: 
+		&apos;1) openPropertySet( &lt;name&gt;, &lt;bool&gt; ) TRUE: create one if it doesn&apos;t exist 
+		&apos;2) removePropertySet( &lt;name&gt; ) 
+		&apos;3) hasByName( &lt;name&gt; ) e.g. vRegistry.hasByName( &quot;tomsStorage&quot; ) 
+			
+	myPrefs = vRegistry.openPropertySet(sMyAppName, False)
+	myPrefs.removeProperty( &quot;Signature&quot;, 128, &quot;True&quot;) 
+end sub
+
+
+Sub TestRegistry
+
+	Dim vRegistryFactory As Variant 
+	Dim vRegistry As Variant 
+	Dim myPropValues As Variant
+	Dim props(2) As New com.sun.star.beans.PropertyValue
+	
+	vRegistryFactory = CreateUnoService(&quot;com.sun.star.ucb.Store&quot;)
+	&apos;the RegistryFactory has only one purpose, creating a property set registry 
+	vRegistry = vRegistryFactory.createPropertySetRegistry(sMyAppName) 
+	myPrefs = vRegistry.openPropertySet(sMyAppName, TRUE)  
+
+		myPropValues = myPrefs.getPropertyValues() 
+		
+&apos;		myPrefs.setPropertyValue(&quot;KeepWF&quot;, &quot;True&quot;)
+&apos;		MsgBox myPrefs.getPropertyValue(&quot;KeepWF&quot;) &amp; chr(13 &amp; myPrefs.getPropertyValue(&quot;Signature&quot;) &amp; chr(13 &amp; myPrefs.getPropertyValue(&quot;ShowMetaWindow&quot;)
+		myPrefs.SetPropertyValue(&quot;KeepWF&quot;, &quot;True&quot;)
+		myPrefs.SetPropertyValue(&quot;Signature&quot;, &quot;False&quot;)
+		myPrefs.SetPropertyValue(&quot;ShowMetaWindow&quot;, &quot;False&quot;)
+&apos;		MsgBox myPrefs.getPropertyValue(&quot;KeepWF&quot;)
+&apos;		MsgBox myPropValues(0).Name &amp; &quot; = &quot; &amp; myPropValues(0).Value 
+&apos;		MsgBox myPropValues(0).Name &amp; &quot; = &quot; &amp; myPropValues(0).Value 
+
+End Sub 
+
+
+Sub FirstBootCheck
+End Sub
+
+
+
+Sub SelectKindlegenPath
+	Dim FilePicker, FilePickerArgs As Object
+	Dim KindlegenPath As String
+	Dim FilePath() As String
+&apos;	DialogLibraries.LoadLibrary(sMyAppName)
+&apos;	dlg=CreateUnoDialog(DialogLibraries.writer2epub.MobiDLG)
+&apos;	If Dlg.Execute() = 1 Then     
+&apos;	End If
+&apos;	dlg.dispose()
+&apos;	exit sub	
+	If dlg.getControl(&quot;CB_MobiExport&quot;).state = 1 Then
+		FilePicker = createUnoService( &quot;com.sun.star.ui.dialogs.FilePicker&quot;) 
+		FilePicker.title = &quot;Please locate Kindlegen&quot; 
+		If FilePicker.execute() Then
+			FilePath = FilePicker.getFiles() 
+			KindlegenPath = ConvertFromURL(FilePath(0))
+			Dlg.GetControl(&quot;TF_KindlegenPath&quot;).Model.Text = KindlegenPath
+		End If
+	
+	End If
+End Sub
+</script:module>

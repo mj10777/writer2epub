@@ -1,0 +1,716 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Graphics" script:language="StarBasic">&apos;=========================================================================
+&apos;==========  This module handles images and graphic objects  =============
+&apos;=========================================================================
+
+Sub ExtractWriterGraphics (MyEpub As String)
+
+	Dim oDocument As Object
+	Dim oGraphics As Object
+
+	Dim oZipArchive As Object
+	Dim oPictures As Object
+	Dim mZipFile(0) As Variant
+	Dim mFiles() As String
+
+	Dim oFileAccess As Object
+	Dim oFile As Object
+	Dim oInputStream As Object
+	Dim oOutputStream As Object
+	Dim mData() As Variant
+	Dim sDestFolder As String
+	Dim sGraphicName As String
+	Dim sGraphicURL As String
+	Dim sTmp As String
+	Dim myAnchor As String
+	Dim sAlt as String
+	Dim sSuffix As String
+	Dim sGraphicAlign, sGraphicDim As String
+	Dim nAnchorType As integer
+	Dim sMyHyperlink As String				&apos;the image hyperlink, if available
+	Dim GraphicWidth, GraphicHeight, GraphicHorPos As Long
+	Dim PageWidth, PageHeight, LeftMargin, RightMargin As Long
+	Dim oPage,oXray As Object
+	Dim sFileUrl As String
+	Dim oUrl As New com.sun.star.util.URL 
+	Dim oTransformer As Object
+	Dim xExporter As Object
+	
+	Dim n As Long
+	Dim i As Integer
+	Dim j As Integer
+	Dim k As Integer
+	Dim x As Integer
+
+	Dim sFileUrlO as String
+	Dim oDrawDoc, oShape as Object
+	Dim mDrawArgs (0) as new com.sun.star.beans.PropertyValue
+	
+	sCSSimageRules = &quot;&quot;		&apos; ths global variable contains the css portion for image IDs
+	
+	MyModule = &quot;Graphics&quot;
+	myLog = myLog &amp; CR &amp; &quot;✔ Start ExtractWriterGraphics&quot;
+	On Error GoTo ErrorHand	
+
+	mDrawArgs(0).Name  =&quot;Hidden&quot;
+	mDrawArgs(0).Value = True	
+
+	If getPrefValue(&quot;RetainOriginalImages&quot;) = &quot;0&quot;  Then	 &apos;We need a suffix before converting an image
+		sSuffix = &quot;_w2e&quot;
+	Else
+		sSuffix = &quot;&quot;
+	End If	
+	oDocument = StarDesktop.getCurrentComponent
+	oPage = oDocument.StyleFamilies.getByName(&quot;PageStyles&quot;).getByIndex(0)
+	PageWidth = oPage.Width - oPage.LeftMargin - oPage.RightMargin
+	
+	CoverType = getMetaValue(&quot;CoverType&quot;)
+	CoverPath = getMetaValue(&quot;CoverPath&quot;)
+	
+	oZipArchive = CreateUnoService(&quot;com.sun.star.packages.Package&quot;)
+	oFileAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)	
+	&apos; create destination folder relative to document ...
+	oTransformer = createUnoService(&quot;com.sun.star.util.URLTransformer&quot;)
+&apos;	oUrl = createUnoService(&quot;com.sun.star.util.URL&quot;)
+	oUrl.Complete = oDocument.URL
+	oTransformer.parsestrict(oUrl) 
+	sDestfolder = MyEpubFolder &amp; &quot;/images/&quot;
+
+	&apos; open zip file and get content of &quot;Pictures&quot; folder ...
+ 	oZipArchive = createUnoService(&quot;com.sun.star.packages.Package&quot;)
+	mZipFile(0) = oDocument.URL
+	oZipArchive.initialize(mZipFile())
+
+	if oZipArchive.hasByHierarchicalName(&quot;Pictures&quot;) then
+		oPictures = oZipArchive.getByHierarchicalName(&quot;Pictures&quot;)
+		mFiles() = oPictures.getElementNames
+	end if
+
+	oGraphics = oDocument.getGraphicObjects
+	oBar.start(MSG_progImg,oGraphics.getCount)
+
+&apos;------ if &quot;cover from file&quot; option, then manage cover file -------
+
+	If CoverType = &quot;File&quot; Then
+		sFileUrlO = getMetaValue(&quot;CoverPath&quot;)
+		If getPrefValue(&quot;RetainOriginalImages&quot;) = &quot;0&quot;  Then	
+			oDrawDoc = StarDesktop.LoadComponentFromUrl(sFileUrlO,&quot;_blank&quot;, 0, mDrawArgs())
+			oShape = oDrawDoc.Drawpages(0).getByIndex(0)		&apos;first shape on first page
+			sFileUrl = MyEpubFolder &amp; &quot;/images/cover.jpg&quot;
+			ExportShapeToJPG(oShape,sFileUrl)
+			oDrawDoc.close(true)
+			CreateCoverPage(MyEpub, &quot;cover.jpg&quot;)
+		Else
+			sFileUrl = MyEpubFolder &amp; &quot;/images/cover.&quot; &amp; GetFileNameExtension(sFileUrlO)
+			sGraphicName = sFileUrlO
+			Do While InStr(1,sGraphicName,&quot;/&quot;)
+				sGraphicName = Mid(sGraphicName,InStr(1,sGraphicName,&quot;/&quot;)+1,Len(sGraphicName)
+			Loop
+			MkDir (MyEpubFolder &amp; &quot;/images/&quot;)
+			Filecopy sFileUrlO, sFileUrl
+			CreateCoverPage(MyEpub, &quot;cover.&quot; &amp; GetFileNameExtension(sFileUrlO))
+		End If
+	End If
+	
+&apos;--------------------------------
+&apos; for all pictures in document ...
+	
+	For i = 0 to oGraphics.getCount-1
+
+		oBar.setValue(i+1/oGraphics.getCount)
+		sGraphicURL = oGraphics.getByIndex(i).GraphicURL
+		sTmp = sGraphicURL
+
+
+		&apos; internal picture names start with &quot;vnd.sun...&quot;
+		If InStr(1, sGraphicURL, &quot;vnd.sun.star.GraphicObject:&quot;, 0) = 0 Then
+			&apos;the image is external.
+			sFileUrlO = sGraphicURL
+			sGraphicName = sGraphicURL
+			Do While InStr(1,sGraphicName,&quot;/&quot;)
+				sGraphicName = Mid(sGraphicName,InStr(1,sGraphicName,&quot;/&quot;)+1,Len(sGraphicName)
+			Loop
+			sGraphicName = convertFromURL (sGraphicName)
+			If getPrefValue(&quot;RetainOriginalImages&quot;) = &quot;0&quot;  Then	 &apos;convert image in jpg
+				sGraphicName =  CleanPictureName(Left(sGraphicName, Len(sGraphicName)-4) &amp; sSuffix &amp; Right(sGraphicName,4))
+				oDrawDoc = StarDesktop.LoadComponentFromUrl(sFileUrlO,&quot;_blank&quot;, 0, mDrawArgs())
+				oShape = oDrawDoc.Drawpages(0).getByIndex(0)		&apos;first shape on first page
+				sFileUrl = MyEpubFolder &amp; &quot;/images/&quot; &amp; sGraphicName
+				ExportShapeToJPG(oShape,sFileUrl)
+				oDrawDoc.close(true)
+			Else												&apos;retain original images
+				sGraphicName =  CleanPictureName(sGraphicName)
+				sFileUrl = MyEpubFolder &amp; &quot;/images/&quot; &amp; sGraphicName
+				Filecopy convertFromURL(sFileUrlO), convertFromURL(sFileUrl)
+			End If
+		Else
+			&apos; get the picture name (comes without the extension)
+			sGraphicURL = Mid(sGraphicURL, 28, Len(sGraphicURL))
+			&apos; so search all files in pictures folder for the current picture ...
+			For j = 0 to uBound(mFiles())
+				If InStr(1, mFiles(j), sGraphicURL, 0) Then
+					&apos; create new name with extension. 
+					&apos; the name ends with _w2e because not yet converted to .jpg
+					If CoverType = &quot;First&quot; and i = 0 Then  &apos;If there is an image in the first page, this will be the cover
+						sGraphicName = CleanPictureName(&quot;cover&quot; &amp; sSuffix &amp; Mid(mFiles(j), Len(sGraphicURL)+1, Len(mFiles(j)))
+						Createcoverpage(MyEpub, &quot;cover.jpg&quot;)
+					Else
+						sGraphicName = CleanPictureName(oGraphics.getByIndex(i).getName() &amp; sSuffix &amp; Mid(mFiles(j), Len(sGraphicURL)+1, Len(mFiles(j)))
+					End If
+					Exit For
+				EndIf
+			Next j
+	
+			&apos; copy file to external folder relative to stored document...
+			
+			oFileAccess = createUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+			oFile = oFileAccess.openFileWrite(sDestFolder &amp; sGraphicName)
+			oOutputStream = createUnoService(&quot;com.sun.star.io.DataOutputStream&quot;)
+			oOutputStream.setOutputStream(oFile)
+
+			oInputStream = oPictures.getByName(mFiles(j)).getInputStream()
+
+			n = - 1
+			While n &lt;&gt; 0
+				n =	oInputStream.readBytes(mData(), 16384)
+				oOutputStream.writeBytes(mData())
+			Wend
+			oOutputStream.flush()
+			oOutputStream.closeOutput()
+			oInputStream.closeInput()
+			ReDim mData() As Variant
+			
+		End If
+
+&apos;======= export to .jpg (even if it is already .jpg) =================
+
+		If getPrefValue(&quot;RetainOriginalImages&quot;) = &quot;0&quot;  Then		&apos;Copy images without changes
+			sFileUrlO = MyEpubFolder &amp; &quot;/images/&quot; &amp; sGraphicName
+			oDrawDoc = StarDesktop.LoadComponentFromUrl(sFileUrlO,&quot;_blank&quot;, 0, mDrawArgs())
+			oShape = oDrawDoc.Drawpages(0).getByIndex(0)		&apos;first shape on first page
+			sFileUrl = GetFileNameWithoutExtension(sFileUrlO)
+			sFileUrl = Left (sFileUrl, Len(sFileUrl)-4) &amp; &quot;.jpg&quot;
+			ExportShapeToJPG(oShape,sFileUrl)
+			oDrawDoc.close(true)
+			Kill sFileUrlO						&apos;delete temporary file _w2e
+	&apos;			Name sFileUrl as sFileUrlO
+			sGraphicName = Left(sGraphicName, Len(sGraphicName)-8) &amp; &quot;.jpg&quot;  &apos;remove the _w2e from filename
+		End If
+		
+&apos;======= skip the link if first image is the cover =============
+
+		If CoverType = &quot;First&quot; And i = 0 Then 
+		Else
+
+&apos;======= manages relative dimension of the image ==============
+
+			GraphicWidth = oGraphics.getByIndex(i).Width
+	 		GraphicWidth = int (GraphicWidth/PageWidth*100)
+			If GraphicWidth &gt;= 100 Then GraphicWidth = 100
+			
+			PageHeight = oPage.Height - oPage.TopMargin - oPage.BottomMargin
+			GraphicHeight = oGraphics.getByIndex(i).Height
+			GraphicHeight = int (GraphicHeight/PageHeight*100)
+			If GraphicHeight &gt;= 100 Then GraphicHeight = 100
+			
+&apos;======= manages image positioning ==============	
+			&apos;.HoriOrient		
+				&apos;0 = NONE
+				&apos;1 = Right
+				&apos;2 = Center
+				&apos;3 = Left
+				&apos;4 = Inside (not supported)
+				&apos;5 = Outside (not supported)
+				&apos;6 = Full space
+				&apos;7 = Left abd Width
+			&apos;.HoriOrientPosition
+				&apos;1/100 mm from left border
+			&apos;.AnchorType
+				&apos;0 = AT_PARAGRAPH
+				&apos;1 = AS_CHARACTER
+				&apos;2 = AT_PAGE
+				&apos;3 = AT_FRAME
+				&apos;4 = AT_CHARACTER	
+			&apos;.TextWrap
+				&apos;0 = NO_WRAP separato
+				&apos;1 = WRAP_THROUGH attraverso / trasparente
+				&apos;2 = PAGE_WRAP intorno
+				&apos;3 = OPTIMAL_PAGE_WRAP scorrimento dinamico
+				
+			If oGraphics.getByIndex(i).anchorType = 2 Then &apos; Anchored to the page? Not supported!
+				oGraphics.getByIndex(i).anchorType = 0 &apos; change to &quot;anchored to para&quot;
+			End If			
+			If oGraphics.getByIndex(i).anchorType = 3 Then &apos; Anchored to frame? Not supported!
+				oGraphics.getByIndex(i).anchorType = 0 &apos; change to &quot;anchored to para&quot;
+			End If	
+			If oGraphics.getByIndex(i).anchorType = 4 Then &apos; Anchored at charachter? Not supported!
+				oGraphics.getByIndex(i).anchorType = 0 &apos; change to &quot;anchored to para&quot;
+			End If		
+
+			GraphicHorPos = (oGraphics.getByIndex(i).Width / 2 + oGraphics.getByIndex(i).HoriOrientPosition)/ PageWidth * 100
+			If GraphicHorPos &lt; 0 Then GraphicHorPos = 0
+			If GraphicHorPos &gt; 100 Then GraphicHorPos = 100
+		
+&apos;==================== get caption if available ==================
+
+&apos;============== get image name to use as alternate ==============			
+			
+			sAlt = oGraphics.getByIndex(i).name
+			sID = CleanPictureName(oGraphics.getByIndex(i).name)
+			
+&apos;============== image anchored as charachter ==============
+
+			If oGraphics.getByIndex(i).anchorType = 1 Then					 &apos; image as charachter
+				RelH = comma2dot(Str(oGraphics.getByIndex(i).height / 300)) &apos; conversion 1/100 mm &gt; points
+				sCSSimageRules = sCSSimageRules &amp; &quot;#&quot; &amp; &quot;img_&quot; &amp; sID &amp; &quot; {&quot; &amp; CR
+				sCSSimageRules = sCSSimageRules &amp; &quot;    display: inline-block; &quot; &amp; CR
+				sCSSimageRules = sCSSimageRules &amp; &quot;    height: &quot; &amp; RelH &amp; &quot;em; &quot; &amp; CR
+				sCSSimageRules = sCSSimageRules &amp; &quot;}&quot; &amp; CR
+				myAnchor = &quot;&lt;span id=&quot;&quot;&quot; &amp; &quot;img_&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&lt;img id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot; style=&quot;&quot;&quot; &amp; RelH &amp; &quot;em;&quot;&quot; src=&quot;&quot;../images/&quot; &amp; sGraphicName &amp; &quot;&quot;&quot; alt=&quot;&quot;&quot; &amp; sAlt &amp; &quot;&quot;&quot; /&gt;&lt;/span&gt;&quot;
+
+&apos;============== image floating ==============
+
+			ElseIf oGraphics.getByIndex(i).TextWrap &lt;&gt; 0 Then&apos;&gt; 1 Then &apos;Page Wrap, floating image
+				sCSSimageRules = sCSSimageRules &amp; &quot;#&quot; &amp; &quot;img_&quot; &amp; sID &amp; &quot; {&quot; &amp; CR
+				sCSSimageRules = sCSSimageRules &amp; &quot;    display :block; &quot; &amp; CR
+				sCSSimageRules = sCSSimageRules &amp; &quot;    width: &quot;  &amp; GraphicWidth &amp; &quot;%;&quot; &amp; CR
+				Select Case oGraphics.getByIndex(i).HoriOrient
+				Case 1
+					sCSSimageRules = sCSSimageRules &amp; &quot;    float: right; &quot; &amp; CR
+				Case Else
+					sCSSimageRules = sCSSimageRules &amp; &quot;    float: left; &quot; &amp; CR
+				End Select
+				sCSSimageRules = sCSSimageRules &amp; &quot;}&quot; &amp; CR
+				myAnchor = &quot;&lt;div id=&quot;&quot;&quot; &amp; &quot;img_&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&lt;img id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot; &quot; &amp; &quot; src=&quot;&quot;../images/&quot; &amp; sGraphicName &amp; &quot;&quot;&quot; alt=&quot;&quot;&quot; &amp; sAlt &amp; &quot;&quot;&quot; /&gt;&lt;/div&gt;&quot; &amp; CR
+				
+&apos;============== image transparent =========
+
+&apos;			ElseIf oGraphics.getByIndex(i).TextWrap = 1 Then &apos;Transparent image
+&apos;				sGraphicAlign = &quot; class=&quot;&quot;transparent&quot;&quot; &quot;
+&apos;				myAnchor = &quot; &lt;div style=&quot;&quot;background-image:url(../images/&quot; &amp; sGraphicName &amp; &quot;&quot;&quot;&gt;&lt;/div&gt;&quot; &amp; CR
+
+
+&apos;============== image inline ==============
+
+			ElseIf oGraphics.getByIndex(i).anchorType = 0 Then &apos;Inline image
+				sCSSimageRules = sCSSimageRules &amp; &quot;#&quot; &amp; &quot;img_&quot; &amp; sID &amp; &quot; {&quot; &amp; CR
+				sCSSimageRules = sCSSimageRules &amp; &quot;    display: block; &quot; &amp; CR
+				sCSSimageRules = sCSSimageRules &amp; &quot;    width:&quot;  &amp; GraphicWidth &amp; &quot;%;&quot; &amp; CR
+				Select Case oGraphics.getByIndex(i).HoriOrient
+				Case 1
+					myMargins = comma2dot(100 - GraphicWidth)
+					sCSSimageRules = sCSSimageRules &amp; &quot;    margin-left: &quot; &amp; myMargins &amp; &quot;%;&quot; &amp; CR
+				Case 3
+					myMargins = comma2dot(100 - GraphicWidth)
+					sCSSimageRules = sCSSimageRules &amp; &quot;    margin-right: &quot; &amp; myMargins &amp; &quot;%;&quot; &amp; CR
+				Case Else
+					myMargins = comma2dot((100 - GraphicWidth) / 2)
+					sCSSimageRules = sCSSimageRules &amp; &quot;    margin-left: &quot; &amp; myMargins &amp; &quot;%;&quot; &amp; CR
+					sCSSimageRules = sCSSimageRules &amp; &quot;    margin-right: &quot; &amp; myMargins &amp; &quot;%;&quot; &amp; CR
+				End Select
+				sCSSimageRules = sCSSimageRules &amp; &quot;}&quot; &amp; CR
+				myAnchor = &quot;&lt;div id=&quot;&quot;&quot; &amp; &quot;img_&quot; &amp; sID &amp; &quot;&quot;&quot;&gt;&lt;img id=&quot;&quot;&quot; &amp; sID &amp; &quot;&quot;&quot; &quot; &amp; &quot; src=&quot;&quot;../images/&quot; &amp; sGraphicName &amp; &quot;&quot;&quot; alt=&quot;&quot;&quot; &amp; sAlt &amp; &quot;&quot;&quot; /&gt;&lt;/div&gt;&quot; &amp; CR
+			End If
+			
+&apos;============ now link picture to new external file ==============
+
+   oGraphics.getByIndex(i).getAnchor.string = &quot;  &quot; &amp; myAnchor
+
+		End If
+
+	Next i
+
+			
+&apos;============ check image dimensions =============
+
+&apos;	MaxDim = val (myPrefs.getPropertyValue(&quot;MaxImageDim&quot;)) * 1024
+&apos;	sWrongList = &quot;&quot;
+&apos;	If FileExists(MyEpubFolder &amp; &quot;/images/&quot;) Then
+&apos;		NextFile = Dir(MyEpubFolder &amp; &quot;/images/&quot;)
+&apos;		While NextFile &lt;&gt; &quot;&quot;
+&apos;			If FileLen(MyEpubFolder &amp; &quot;/images/&quot; &amp; NextFile) &gt;MaxDim Then
+&apos;				sWrongList = sWrongList &amp; CR &amp; NextFile &amp; &quot;: &quot; &amp; FileLen(MyEpubFolder &amp; &quot;/images/&quot; &amp; NextFile) &amp; &quot; Bytes&quot;
+&apos;			End If
+&apos;			NextFile = Dir
+&apos;		WEnd
+&apos;		If sWrongList &lt;&gt; &quot;&quot; Then
+&apos;			MsgBox &quot;Image Files larger than &quot; &amp; (myPrefs.getPropertyValue(&quot;MaxImageDim&quot;)) &amp; &quot; KBytes!&quot; &amp; cr &amp; sWrongList
+&apos;			sWrongList = &quot;&quot;
+&apos;		End If
+&apos;	End If
+	
+	
+	myLog = myLog &amp; CR &amp; &quot;✔ End ExtractWriterGraphics &quot;	
+&apos;StopHere	
+	Exit Sub
+	ErrorHand:
+	ErrorHandler
+	
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+Sub CopyPicture (oSource As Object, sDestFolder, sGraphicName )
+	Dim oFile As Object
+	Dim oFileAccess As Object
+	Dim oOutputStream As Object
+	Dim oInputStream As Object
+	Dim mData() As Variant
+	Dim n As Integer
+	myLog = myLog &amp; CR &amp; &quot;✔ Start CopyPicture&quot;	
+	oFileAccess = createUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+	oFile = oFileAccess.openFileWrite(sDestFolder &amp; sGraphicName)
+	oOutputStream = createUnoService(&quot;com.sun.star.io.DataOutputStream&quot;)
+	oOutputStream.setOutputStream(oFile)
+	oInputStream = oSource.getInputStream()
+
+	n = - 1
+	While n &lt;&gt; 0
+		n =	oInputStream.readBytes(mData(), 16384)
+		oOutputStream.writeBytes(mData())
+	Wend
+	oOutputStream.flush()
+	oOutputStream.closeOutput()
+	oInputStream.closeInput()
+	ReDim mData() As Variant
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
+	
+End Sub
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Sub ExportShapeToJPG(oShape As Any, sFileUrl As String)
+
+
+&apos; cfr.: http://www.oooforum.org/forum/viewtopic.phtml?t=51021
+	Dim aFilterData (4) As new com.sun.star.beans.PropertyValue 
+	Dim aArgs (2) As new com.sun.star.beans.PropertyValue
+	myLog = myLog &amp; CR &amp; &quot;  ✔ Start ExportShapeToJPG&quot; &apos; &amp; CR &amp; &quot;   (&quot; &amp; sFileUrl &amp; &quot;)&quot;
+
+	&apos;filter data for the image/jpg MediaType
+	
+	aFilterData(0).Name  = &quot;Quality&quot;
+	aFilterData(0).Value = val (getPrefValue(&quot;ImageQuality&quot;))  &apos;highest quality = 100
+	aFilterData(1).Name  = &quot;ColorMode&quot; 				&apos;0: Color; 1: Greyscale
+ 	If getPrefValue (&quot;BlackWhite&quot;) = &quot;1&quot; Then
+		aFilterData(1).Value = 1
+	Else
+		aFilterData(1).Value = 0
+	End If
+	
+&apos;	aFilterData(2).Name  = &quot;LogicalWidth&quot;			&apos;width of the resulting image in 1/100 mm
+&apos;	aFilterData(2).Value = 600*2.54/72				&apos; pixels x 1 inch / 72 dot-per-inch
+&apos;	aFilterData(3).Name  = &quot;LogicalHeight&quot;			&apos;height of the resulting image in 1/100 mm
+&apos;	aFilterData(3).Value = 800*2.54/72
+	aFilterData(2).Name  = &quot;PixelWidth&quot;				&apos;width of the resulting image in pixels
+	aFilterData(2).Value = 2000     
+	aFilterData(3).Name  = &quot;PixelHeight&quot;			&apos;height of the resulting image in pixels
+	aFilterData(3).Value = 2000
+	aFilterData(4).Name  = &quot;ExportMode&quot;				&apos;0: Original; 1: DPI; 2: Size
+	aFilterData(4).Value = 2
+	
+	&apos;export filter data
+	aArgs(0).Name  = &quot;MediaType&quot;
+	aArgs(0).Value = &quot;image/jpg&quot;
+	aArgs(1).Name  = &quot;URL&quot;
+	aArgs(1).Value = sFileUrl
+	aArgs(2).Name  = &quot;FilterData&quot;
+	aArgs(2).Value = aFilterData()
+	
+	xExporter = createUnoService( &quot;com.sun.star.drawing.GraphicExportFilter&quot; )
+	xExporter.setSourceDocument( oShape )
+	
+	xExporter.filter(aArgs())
+	myLog = myLog &amp; CR &amp; &quot;  ✔ End&quot;	
+
+End Sub
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Function CleanPictureName (myString as String)
+	&apos;This function is used to remove all non-ASCII charachters in a string.
+
+	Dim i As Integer
+	Dim Wrong, Right as String
+	
+	Wrong = &quot;ÀÁÂÃÄÅĀĄĂÇĆČĈĊĎĐÈÉÊËĒĘĚĔĖĜĞĠĢĤĦÌÍÎÏĪĨĬĮİĴĶŁĽĹĻĿÑŃŇŅŊÒÓÔÕÖØŌŐŎŔŘŖŚŠŞŜȘŤŢŦȚÙÚÛÜŪŮŰŬŨŲŴÝŶŸŹŽŻ&quot;
+	Right = &quot;AAAAAAAAACCCCCDDEEEEEEEEEGGGGHHIIIIIIIIIJKLLLLLNNNNNOOOOOOOOORRRSSSSSTTTTUUUUUUUUUUWYYYZZZ&quot;
+	Wrong = Wrong &amp; &quot;àáâãäåāąăçčĉċďđèéêëēęěĕėƒĝğġģĥħìíîïīĩĭįıĵķĸłľĺļŀñńňņŉŋòóôõöøōőŏŕřŗśšşŝșťţŧțùúûüūůűŭũųŵýÿŷžżź&quot;
+	Right = Right &amp; &quot;aaaaaaaaaccccddeeeeeeeeefgggghhiiiiiiiiijkklllllnnnnnnooooooooorrrsssssttttuuuuuuuuuuwyyyzzz&quot;
+	Wrong = Wrong &amp; &quot; &lt;&gt;&amp;&apos;&quot;&quot;&quot;
+	Right = Right &amp; &quot;______&quot;
+	For i = 1 to len (Wrong)
+		myString = Replace(myString, Mid(Wrong,i,1), Mid(Right,i,1))
+	Next i
+	
+	For i = 1 to Len (myString)
+		If Asc(Mid(myString,i,1))&gt;128 Or Asc(Mid(myString,i,1))&lt;31 Then
+			myString = Replace(myString, Mid(myString,i,1), &quot;*&quot;)
+		End If
+	Next i
+	CleanPictureName = myString
+End Function
+
+
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+
+Function isThisFirstImage
+	dim firstChapterEnum as Object
+	dim FirstChapter as Object
+	Dim contenutoenum as object
+	dim contenuto as object
+	firstChapterEnum = ThisComponent.getText().createEnumeration()
+	If firstChapterEnum.hasMoreElements() then
+		FirstChapter = firstChapterEnum.nextElement()
+		If FirstChapter.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then &apos;---- This manages the paragraphs
+			contenutoenum = FirstChapter.createContentEnumeration(&quot;com.sun.star.text.TextContent&quot;)
+			Do While contenutoenum.hasMoreElements()
+				contenuto = contenutoenum.nextElement()
+				If contenuto.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Then
+					isThisFirstImage = contenuto.GraphicURL
+					If InStr(1,isThisFirstImage, &quot;vnd.sun.star.GraphicObject:&quot;, 0) = 1 Then
+						isThisFirstImage =  Mid(isThisFirstImage, 28, Len(isThisFirstImage)
+					End If
+				Else
+					isThisFirstImage = &quot;&quot;
+				End If
+			Loop
+		end if
+	end if
+End function
+
+
+&apos;_______________________________________________________________________________________________________________________________
+
+
+Sub CreateCoverPage(MyEpub As String, sCoverFileName As String)
+    Dim t_oOutputAccess As Object
+    Dim t_oOutputStream As Object
+    Dim t_vOutputData   As Variant
+    Dim sBackgroundColor As String
+	Dim metaProp As New com.sun.star.beans.PropertyValue
+	myLog = myLog &amp; CR &amp; &quot;  ✔ Start CreateCoverPage&quot;	
+    sBackgroundColor = getMetaValue (&quot;BackgroundColor&quot;)
+
+   	t_oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+   	t_oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+   	t_vOutputData   = t_oOutputAccess.openFileWrite(MyEpubFolder + &quot;/text/coverpage.xhtml&quot;)
+   	t_oOutputStream.setOutputStream(t_vOutputData)
+   	t_oOutputStream.setEncoding(&quot;UTF-8&quot;)
+   	t_oOutputStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot;?&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;&lt;html xmlns=&quot;&quot;http://www.w3.org/1999/xhtml&quot;&quot; xml:lang=&quot;&quot;en&quot;&quot;&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot; &lt;head&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=UTF-8&quot;&quot;/&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;title&gt;Cover&lt;/title&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;style type=&quot;&quot;text/css&quot;&quot; title=&quot;&quot;override_css&quot;&quot;&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;   @page {padding: 0pt; margin:0pt}&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;   body { text-align: center; padding:0pt; margin: 0pt; background-color : #&quot; &amp; sBackgroundColor &amp; &quot;;}&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;/style&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot; &lt;/head&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot; &lt;body&gt;&quot; &amp; CR)
+&apos;	t_oOutputStream.writeString(&quot;    &lt;svg xmlns=&quot;&quot;http://www.w3.org/2000/svg&quot;&quot; xmlns:xlink=&quot;&quot;http://www.w3.org/1999/xlink&quot;&quot; version=&quot;&quot;1.1&quot;&quot; width=&quot;&quot;100%&quot;&quot; height=&quot;&quot;100%&quot;&quot; viewBox=&quot;&quot;0 0 350 530&quot;&quot;&gt;&quot; &amp; CR)
+&apos;	t_oOutputStream.writeString(&quot;      &lt;image width=&quot;&quot;350&quot;&quot; height=&quot;&quot;530&quot;&quot; xlink:href=&quot;&quot;../images/&quot; &amp; sCoverFileName &amp; &quot;&quot;&quot;/&gt;&quot; &amp; CR)
+&apos;	t_oOutputStream.writeString(&quot;    &lt;/svg&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;div&gt;&quot;)
+   	t_oOutputStream.writeString(&quot;   &lt;img id=&quot;&quot;cover&quot;&quot; height=&quot;&quot;100%&quot;&quot; alt=&quot;&quot;Cover&quot;&quot; src=&quot;&quot;../images/&quot; &amp; sCoverFileName &amp; &quot;&quot;&quot; /&gt;&quot; &amp; CR)
+&apos;	t_oOutputStream.writeString(&quot;    &lt;img class=&quot;&quot;cover&quot;&quot; alt=&quot;&quot;Cover&quot;&quot; src=&quot;&quot;../images/&quot; &amp; sCoverFileName &amp; &quot;&quot;&quot; /&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;  &lt;/div&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot; &lt;/body&gt;&quot; &amp; CR)
+   	t_oOutputStream.writeString(&quot;&lt;/html&gt;&quot; &amp; CR)
+   	t_oOutputStream.flush()
+   	t_oOutputStream.closeOutput()
+	myLog = myLog &amp; CR &amp; &quot;  ✔ End&quot;	
+
+End Sub
+
+
+
+&apos;**************************************************************
+&apos;************** test *************************
+
+
+REM  *****  BASIC  *****
+REM ostorj &lt;at] freemail {dot] hu (c) 2010
+REM License: freeware
+
+Sub ExportAllGraphics170dpi
+  Dim BasePath As String
+  Dim DPI  as integer
+
+	oPathSettings = CreateUnoService( &quot;com.sun.star.util.PathSettings&quot; )
+
+	&apos;--- config section ---
+	DPI      = 170
+    BasePath = MyEpubFolder &amp; &quot;/images2/&quot; &amp; &quot;/&quot;		&apos;My Documents folder. you can also use &quot;file:///c:/&quot;
+	&apos;--- end of config section ---
+
+	xDoc = ThisComponent	&apos;REM A smart person would force this to be a Draw or Impress document
+	xView = xDoc.currentController
+	
+	DrawPages = xDoc.getDrawPage()
+
+	Dim i as integer
+
+	for i=0 to DrawPages.Count-1
+
+		DrawPage = DrawPages(i)
+		
+		Dim BitmapUrl as String 
+		if( DrawPage.Name = &quot;&quot; ) then
+			BitmapUrl = BasePath + DrawPage.ImplementationName + (1+i) + &quot;.png&quot;
+		else
+			BitmapUrl = BasePath + DrawPage.Name + &quot;.png&quot;
+		end if
+
+		If DrawPage.supportsService(&quot;com.sun.star.text.TextGraphicObject&quot;) Then 
+
+			graphic = DrawPage.Graphic
+
+			Dim WidthMm as Double, HeightMm as Double
+			WidthMm   = DrawPage.Size.Width  / 100.0
+			HeightMm  = DrawPage.Size.Height / 100.0
+			
+			&apos; _SaveRasterGraphicAsBitmap( graphic, WidthMm, HeightMm, BitmapUrl )
+		else
+			_ExportVectorObjectAsBitmap( xView, DrawPage, DPI, BitmapUrl )
+		endif
+
+	next i
+
+End Sub
+
+sub _ExportVectorObjectAsBitmap( aController, aVectorObject, aDpiValue As Double, aBitmapUrlName As String )
+
+	&apos;Works for ad-hoc shapes and also for embedded objects ( formula, ODG drawing, chart, etc.)
+	Dim DPMm as Double, WidthMm as Double, HeightMm as Double
+	Dim WidthPix As Integer, HeightPix As Integer
+
+	WidthMm   = aVectorObject.Size.Width  / 100.0
+	HeightMm  = aVectorObject.Size.Height / 100.0
+
+	DPMm      = aDpiValue / 25.6
+	WidthPix  = WidthMm * DPMm
+	HeightPix = HeightMm* DPMm
+
+	&apos;copying Writer&apos;s vector object to OODraw. Thus it will be converted to a shape, so it becames 
+	&apos;rasterizable and exportable as  bitmap, with arbitrary resolution
+	aController.select( aVectorObject )
+
+	oDocFrame = aController.getFrame()
+
+	oDispatchHelper = createUnoService( &quot;com.sun.star.frame.DispatchHelper&quot; )
+	oDispatchHelper.executeDispatch( oDocFrame, &quot;.uno:Copy&quot;, &quot;&quot;, 0, Array() )
+	
+	oDrawDoc = StarDesktop.loadComponentFromURL( &quot;private:factory/sdraw&quot;, &quot;_blank&quot;, 0, Array() )
+	oDrawPage = oDrawDoc.getDrawPages().getByIndex( 0 )
+	oDrawDocCtrl = oDrawDoc.getCurrentController()
+	oDrawDocFrame = oDrawDocCtrl.getFrame()
+	oDispatchHelper.executeDispatch( oDrawDocFrame, &quot;.uno:Paste&quot;, &quot;&quot;, 0, Array() )
+
+	Dim NewShape
+	NewShape = oDrawDocCtrl.selection	&apos;the shape version of the formula
+
+	&apos;Perform the save
+	_SaveVectorShapeAsBitmap( NewShape, aDpiValue, WidthPix, HeightPix, WidthMm, HeightMm, aBitmapUrlName )
+
+	&apos;drop temp drawing	
+	oDrawDoc.close(False)
+	
+end sub 
+
+sub _SaveVectorShapeAsBitmap( aGraphicObj, aDpiValue As Double, aWidthPix As Integer, aHeightPix As Integer, aWidthMm As Double, aHeightMm As Double, aBmpUrlName As String )
+
+&apos;	dpiw = 25.6 * aWidthPix  / aWidthMm
+&apos;	dpih = 25.6 *aHeightPix / aHeightMm
+
+	Dim aFilterData(6) As New com.sun.star.beans.PropertyValue
+	aFilterData(0).Name  =&quot;Color&quot;
+	aFilterData(0).Value = 7			&apos;0: Original; 1: 1-Bit threshold value; 2: 1-Bit dithering; 3: 4-Bit Greyscale; 4: 4-Bit Color Palette; 5: 8-Bit Greyscale; 6: 8-Bit Color Palette; 7: True Color
+	aFilterData(1).Name  =&quot;ExportMode&quot;
+	aFilterData(1).Value = 2			&apos;0: Original; 1: DPI; 2: Size
+	aFilterData(2).Name  =&quot;Resolution&quot;
+	aFilterData(2).Value = Int( aDpiValue )	&apos;in DPI, only used for ExportMode DPI. For the actual export dimensions, PixelWidth and PixelHeight are used, Resolution is only written into the file header
+	aFilterData(3).Name  = &quot;PixelWidth&quot;        
+	aFilterData(3).Value = Int( aWidthPix )
+	aFilterData(4).Name  = &quot;PixelHeight&quot;
+	aFilterData(4).Value = Int( aHeightPix )
+	aFilterData(5).Name  = &quot;LogicalWidth&quot;
+	aFilterData(5).Value = Int( aWidthMm  * 100.0 )		&apos;LogicalWidth:  integer, only usable with ExportMode Size, only influences the DPI header.
+	aFilterData(6).Name  = &quot;LogicalHeight&quot;
+	aFilterData(6).Value = Int( aHeightMm * 100.0 )		&apos;LogicalHeight: integer, only usable with ExportMode Size, only influences the DPI header. 
+
+	
+	
+	&apos;Dim SizePixel as com.sun.star.beans.Size
+	Dim ExportArgs (2) as new com.sun.star.beans.PropertyValue
+	ExportArgs(0).Name  = &quot;MediaType&quot;
+	ExportArgs(0).Value = &quot;image/png&quot;
+	ExportArgs(1).Name  = &quot;URL&quot;
+	ExportArgs(1).Value = aBmpUrlName
+	ExportArgs(2).Name  = &quot;FilterData&quot;
+	ExportArgs(2).Value = aFilterData()
+
+	xDrawingExporter = createUnoService( &quot;com.sun.star.drawing.GraphicExportFilter&quot; )
+	xDrawingExporter.setSourceDocument( aGraphicObj )
+	xDrawingExporter.filter( ExportArgs ) 
+end sub
+
+sub _SaveRasterGraphicAsBitmap( aGraphicObj, aWidthMm As Double, aHeightMm As Double, aBitmapUrlName As String )
+
+	Dim WidthIn as Double
+	Dim CalcDpi as Integer
+
+	Dim WidthPix as Integer, HeightPix as Integer
+	WidthPix  = aGraphicObj.SizePixel.Width
+	HeightPix = aGraphicObj.SizePixel.Height
+	
+	WidthIn   = aWidthMm / 25.4
+	CalcDpi   = Int( WidthPix / WidthIn )
+	
+	Dim FilterData(5) as new com.sun.star.beans.PropertyValue
+	FilterData(0).Name  = &quot;PixelWidth&quot;        &apos;
+	FilterData(0).Value = WidthPix
+	FilterData(1).Name  = &quot;PixelHeight&quot;
+	FilterData(1).Value = HeightPix
+	FilterData(2).Name  = &quot;Color&quot;
+	FilterData(2).Value = 0					&apos;0: Original; 1: 1-Bit threshold value; 2: 1-Bit dithering; 3: 4-Bit Greyscale; 4: 4-Bit Color Palette; 5: 8-Bit Greyscale; 6: 8-Bit Color Palette; 7: True Color
+	FilterData(3).Name  = &quot;ExportMode&quot;
+	FilterData(3).Value = 1					&apos;0: Original; 1: DPI; 2: Size
+	FilterData(4).Name  = &quot;Resolution&quot;
+	FilterData(4).Value = CalcDpi			&apos;in DPI, only used for ExportMode DPI. For the actual export dimensions, PixelWidth and PixelHeight are used, Resolution is only written into the file header
+	FilterData(3).Name  = &quot;ExportMode&quot;
+	FilterData(3).Value = 2					&apos;0: Original; 1: DPI; 2: Size
+	FilterData(4).Name  = &quot;LogicalWidth&quot;
+	FilterData(4).Value = Int( aWidthMm * 100 )	&apos;LogicalWidth:  integer, only usable with ExportMode Size, only influences the DPI header.
+	FilterData(5).Name  = &quot;LogicalHeight&quot;
+	FilterData(5).Value = Int( aHeightMm * 100 )	&apos;LogicalHeight: integer, only usable with ExportMode Size, only influences the DPI header. 
+	
+	Dim ExportArgs(3) as new com.sun.star.beans.PropertyValue
+	ExportArgs(0).Name  = &quot;MimeType&quot;
+	ExportArgs(0).Value = &quot;image/png&quot;
+	ExportArgs(1).Name  = &quot;URL&quot;
+	ExportArgs(1).Value = aBitmapUrlName
+	ExportArgs(2).Name  = &quot;SizePixel&quot;        
+	ExportArgs(2).Value = aGraphicObj.SizePixel
+	ExportArgs(3).Name  = &quot;FilterData&quot;
+	ExportArgs(3).Value = FilterData
+
+	oProvider = createUnoService(&quot;com.sun.star.graphic.GraphicProvider&quot;)
+	oProvider.storeGraphic( aGraphicObj, ExportArgs )
+	
+end sub
+     
+Function comma2dot(myValue As String)
+	myValue = replace(myValue, &quot;,&quot;, &quot;.&quot;)
+	comma2dot = myValue
+End Function
+</script:module>
