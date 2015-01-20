@@ -146,6 +146,7 @@
 &apos;			css file renamed to style_epub.css
 &apos;   image directory renamed to images
 &apos;   added title in content header
+&apos;   added : fonts in local fonts directory will be copied to EPubFolder
 &apos;			
 &apos;
 &apos;			
@@ -164,6 +165,7 @@ Option Explicit
 	Public Const ThisIsMe As String = &quot;Luca Calcinai&quot;
 	Public CR As String		&apos; the carriage return character used often
 	Public sDocURL As String			&apos;
+	Public sFontsDir As String			&apos; if exists, copy font to archive fonts directory
 	Public sDocDir As String			&apos;
 	Public sFileExt As String			&apos;
 	Public sFileN As String
@@ -374,6 +376,7 @@ Sub FilePrimer
 
 	sDocURL = oDoc.getURL() 
 	sDocDir=DirectoryNameoutofPath(sDocURL, &quot;/&quot;) 
+	sFontsDir=sDocDir &amp; &quot;/fonts/&quot;
 	sFileExt=GetFileNameExtension(sDocURL) 
 	sFileN=GetFileNamewithoutExtension(sDocURL)      &apos;with path!
 	sFileNoPath=GetFileNameWithoutExtension(sDocURL,&quot;/&quot;) 
@@ -431,7 +434,19 @@ Sub CreateFolderStructure (MyEpub As string)
 	MkDir (MyEpubFolder &amp; &quot;/META-INF&quot;)
 	MkDir (MyEpubFolder &amp; &quot;/text&quot;)
 	MkDir (MyEpubFolder &amp; &quot;/fonts&quot;)
-	myLog = myLog &amp; CR &amp; &quot;;✔ End&quot;
+	If FileExists(sFontsDir) Then 
+	 &apos;myLog = myLog &amp; CR &amp; &quot;✔ found local [&quot; &amp; sFontsDir &amp; &quot;] fonts directory. &quot;
+	 Dim NextFile As String
+	 NextFile = Dir(sFontsDir)
+	 While NextFile &lt;&gt; &quot;&quot;
+	  If Right(NextFile, 4) = &quot;.ttf&quot; Then
+	   FileCopy(sFontsDir &amp; &quot;/&quot; &amp; NextFile, MyEpubFolder &amp; &quot;/fonts/&quot; &amp; NextFile)
+	   myLog = myLog &amp; CR &amp; &quot;   ✔ copied [&quot; &amp; NextFile &amp; &quot;] to fonts directory. &quot;
+	  End If
+	  NextFile = Dir
+	 WEnd
+	End If
+	myLog = myLog &amp; CR &amp; &quot;✔ End&quot;
 End Sub
 
 
