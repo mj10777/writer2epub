@@ -10,13 +10,9 @@ the long term goal will be:
 
 ---
 
-The following changes have been made to this copy:
-* removed  OEBPS directory
-* html and css formatting, indention 1
-* added fonts directory, with css entry [fonts not copied]
-* css file renamed to style_epub.css
-* image directory renamed to images
-* added title in content header
+* most of this information will be found in the Wiki pages
+
+[The Wiki Home Page as a starting point](https://github.com/mj10777/writer2epub/wiki)
 
 ---
 2015-01-20: Mark Johnson, Berlin Germany
