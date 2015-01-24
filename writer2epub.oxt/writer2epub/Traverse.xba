@@ -82,6 +82,8 @@ Sub TraverseText( TraverseSimulate As Boolean)
 	sStartPageCode = sStartPageCode &amp; &quot; &lt;head&gt;&quot; &amp; CR
 	sStartPageCode = sStartPageCode &amp; &quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR
 	sStartPageCode = sStartPageCode &amp; &quot;  &lt;title&gt;&quot;&amp; replace_title &amp; &quot;&lt;/title&gt;&quot; &amp; CR
+ sStartPageCode = sStartPageCode &amp; &quot;  &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot; /&gt; &amp; CR
+ 
 	sStartPageCode = sStartPageCode &amp; &quot; &lt;/head&gt;&quot; &amp; CR
 	sStartPageCode = sStartPageCode &amp; &quot; &lt;body&gt;&quot;
 
@@ -189,8 +191,10 @@ Sub TraverseText( TraverseSimulate As Boolean)
    If sTOC (iTocCount, 1) &lt;&gt; replace_TitleText Then
 			 replace_TitleText=sTOC (iTocCount, 1) 
     if replace_StartPageCode = &quot;&quot; Then
-			  replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
-			  oOutputStream.writeString( replace_StartPageCode &amp; CR )
+     replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
+     If TraverseSimulate=False Then 
+      oOutputStream.writeString( replace_StartPageCode &amp; CR )
+     End If
     Else
      replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
     End If
