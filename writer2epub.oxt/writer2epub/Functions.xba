@@ -168,6 +168,44 @@ Function Txt (TextToAdd As String)
 	dispatcher.executeDispatch(document, &quot;.uno:InsertPara&quot;, &quot;&quot;, 0, Array())
 End Function
 
+Function Valid_File_Name (sStr As String)
+&apos;This function is used to remove charater that should not be used in a file name.
+&apos;- characters starting with &quot;(&quot; or &quot;[&quot; are considered extra information that is not a part of the title
+&apos;- thus everything after these characters are removed.
+	Dim pStart As Integer &apos; search position
+	Dim sLeft As String &apos; the string portion before the replaced string
+	pStart = InStr(1,sStr,&quot;(&quot;)
+	If pStart &gt; 1 Then
+	 sLeft = Left(sStr, pStart -1)
+	Else
+	 sLeft = sStr
+	End If
+	pStart = InStr(1,sLeft,&quot;[&quot;)
+	If pStart &gt; 1 Then
+	 sLeft = Left(sLeft, pStart -1)
+	End If
+	sLeft = Rtrim(sLeft)
+	sLeft = Replace (sLeft, &quot;&quot;&quot;&quot;, &quot;&quot;)
+	sLeft = Replace (sLeft, &quot;&apos;&quot;, &quot;&quot;)
+ sLeft = Replace (sLeft, &quot;.&quot;, &quot;&quot;)
+ sLeft = Replace (sLeft, &quot;,&quot;, &quot;&quot;)
+ sLeft = Replace (sLeft, &quot;!&quot;, &quot;&quot;)
+ sLeft = Replace (sLeft, &quot;è&quot;, &quot;e&quot;)
+ sLeft = Replace (sLeft, &quot;é&quot;, &quot;e&quot;)
+ sLeft = Replace (sLeft, &quot;ö&quot;, &quot;oe&quot;)
+ sLeft = Replace (sLeft, &quot;ü&quot;, &quot;ue&quot;)
+ sLeft = Replace (sLeft, &quot;ä&quot;, &quot;ae&quot;)
+ sLeft = Replace (sLeft, &quot;Ö&quot;, &quot;Oe&quot;)
+ sLeft = Replace (sLeft, &quot;Ü&quot;, &quot;Ue&quot;)
+ sLeft = Replace (sLeft, &quot;Ä&quot;, &quot;Ae&quot;)
+ sLeft = Replace (sLeft, &quot;ß&quot;, &quot;ss&quot;)
+	sLeft = Replace (sLeft, &quot;&apos;&quot;, &quot;&quot;)
+	sLeft = Replace (sLeft, &quot; &quot;, &quot;_&quot;)
+ sLeft = Replace (sLeft, &quot;&amp;#39;&quot;, &quot;&quot;)
+ sLeft = Replace (sLeft, &quot;&amp;quot;&quot;, &quot;&quot;)
+	Valid_File_Name() = sLeft
+End Function
+
 Function CleanTags (sStr As String)
 
 &apos;This function is used to remove all kind of tags inside of a string.

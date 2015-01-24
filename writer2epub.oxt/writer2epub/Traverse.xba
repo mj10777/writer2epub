@@ -44,10 +44,12 @@ Sub TraverseText( TraverseSimulate As Boolean)
 	Dim curListLevel As Integer
 	Dim prevListLevel As Integer	
  Const replace_title As String = &quot;#replace_title#&quot;
+ Dim File_Name_Xhtml As String 
+ Dim File_Name_Xhtml_Base As String 
 	
 	oBMarks=oDoc.getBookmarks
 	&apos;clean sToc content
-	ReDim sTOC (10000,3) As String
+	ReDim sTOC (10000,5) As String &apos;TOC entry list: 1:text 2:level 3:split# 4: cover_title 5: header_link
 	iTocLevel=0
 	iTOCcount=0
 	MyListType = &quot;&quot;
@@ -82,7 +84,7 @@ Sub TraverseText( TraverseSimulate As Boolean)
 	sStartPageCode = sStartPageCode &amp; &quot; &lt;head&gt;&quot; &amp; CR
 	sStartPageCode = sStartPageCode &amp; &quot;  &lt;link rel=&quot;&quot;stylesheet&quot;&quot; href=&quot;&quot;../styles/style_epub.css&quot;&quot; type=&quot;&quot;text/css&quot;&quot; /&gt;&quot; &amp; CR
 	sStartPageCode = sStartPageCode &amp; &quot;  &lt;title&gt;&quot;&amp; replace_title &amp; &quot;&lt;/title&gt;&quot; &amp; CR
- sStartPageCode = sStartPageCode &amp; &quot;  &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot; /&gt; &amp; CR
+	sStartPageCode = sStartPageCode &amp; &quot;  &lt;meta http-equiv=&quot;&quot;Content-Type&quot;&quot; content=&quot;&quot;text/html; charset=utf-8&quot;&quot; /&gt;&quot; &amp; CR
  
 	sStartPageCode = sStartPageCode &amp; &quot; &lt;/head&gt;&quot; &amp; CR
 	sStartPageCode = sStartPageCode &amp; &quot; &lt;body&gt;&quot;
@@ -127,9 +129,9 @@ Sub TraverseText( TraverseSimulate As Boolean)
 		
 		oOutputAccess = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
 		oOutputStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
-		vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
-		oOutputStream.setOutputStream(vOutputData)
-		oOutputStream.setEncoding(&quot;UTF-8&quot;)
+		&apos;vOutputData   = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+		&apos;oOutputStream.setOutputStream(vOutputData)
+		&apos;oOutputStream.setEncoding(&quot;UTF-8&quot;)
 		&apos;oOutputStream.writeString( sStartPageCode &amp; CR )
   replace_StartPageCode=&quot;&quot;
   replace_TitleText=&quot;&quot;
@@ -187,18 +189,39 @@ Sub TraverseText( TraverseSimulate As Boolean)
 			
 &apos;---- Call Paragraph analysis ------------
 
-			sParEx = fnExportParagraph(oPar,TraverseSimulate)
+   sParEx = fnExportParagraph(oPar,TraverseSimulate)
    If sTOC (iTocCount, 1) &lt;&gt; replace_TitleText Then
-			 replace_TitleText=sTOC (iTocCount, 1) 
+    replace_TitleText=sTOC (iTocCount, 1) 
+    If i_header_logic = 0 Then
+     File_Name_Xhtml_Base=cover_title
+     File_Name_Xhtml=MyEpubFolder &amp; &quot;/text/&quot;&amp; File_Name_Xhtml_Base
+     sTOC (iTocCount, 4)=File_Name_Xhtml
+    Else
+     If 	sTOC (iTocCount, 2) &lt;= i_header_logic Then
+      iSplitNumber = 0	
+      File_Name_Xhtml_Base=Valid_File_Name(replace_TitleText) &amp; &quot;_&quot; 
+      File_Name_Xhtml=MyEpubFolder &amp; &quot;/text/&quot;&amp; File_Name_Xhtml_Base
+      sTOC (iTocCount, 4)=File_Name_Xhtml
+     End If
+    End If
     if replace_StartPageCode = &quot;&quot; Then
      replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
      If TraverseSimulate=False Then 
+      vOutputData = oOutputAccess.openFileWrite(sTOC (iTocCount, 4) &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+      oOutputStream.setOutputStream(vOutputData)
+      oOutputStream.setEncoding(&quot;UTF-8&quot;)
       oOutputStream.writeString( replace_StartPageCode &amp; CR )
      End If
     Else
      replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
     End If
+   Else
+    sTOC (iTocCount, 4)=File_Name_Xhtml
    End If
+   If sTOC (iTocCount, 4) = &quot;&quot; Then
+    sTOC (iTocCount, 4)=File_Name_Xhtml
+   End If
+   sTOC (iTocCount, 3) = File_Name_Xhtml_Base &amp; sTOC (iTocCount, 5)
 				    
 &apos;------- lists handling ------------
 	    
@@ -287,7 +310,7 @@ Sub TraverseText( TraverseSimulate As Boolean)
 						oOutputStream.writeString( sEndPageCode &amp; CR )
 						oOutputStream.flush()
 						oOutputStream.closeOutput()				
-						vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+						vOutputData = oOutputAccess.openFileWrite(sTOC (iTocCount, 4) &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
 						oOutputStream.setOutputStream(vOutputData)
 						oOutputStream.setEncoding(&quot;UTF-8&quot;)
 						oOutputStream.writeString( replace_StartPageCode &amp; CR )
@@ -307,7 +330,7 @@ Sub TraverseText( TraverseSimulate As Boolean)
 					oOutputStream.writeString( sEndPageCode &amp; CR )
 					oOutputStream.flush()
 					oOutputStream.closeOutput()				
-					vOutputData = oOutputAccess.openFileWrite(MyEpubFolder &amp; &quot;/text/content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+					vOutputData = oOutputAccess.openFileWrite(sTOC (iTocCount, 4) &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
 					oOutputStream.setOutputStream(vOutputData)
 					oOutputStream.setEncoding(&quot;UTF-8&quot;)
 					oOutputStream.writeString( replace_StartPageCode &amp; CR )
@@ -317,7 +340,7 @@ Sub TraverseText( TraverseSimulate As Boolean)
 			bFirstPage = False
 			
 			If TraverseSimulate=True Then
-				FlushBookmarksBuffer(&quot;content&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+				FlushBookmarksBuffer(&quot;sTOC (iTocCount, 4)&quot; &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
 				ReDim bkMarksCurPageBuffer(oBMarks.Count-1) As String
 			EndIf
 		End If
@@ -594,7 +617,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			iTocCount = iTocCount + 1
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 1
-			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 			sStr = &quot;  &lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h1&gt;&quot; 
 		Case &quot;heading 2&quot;
@@ -602,7 +626,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			iTocCount = iTocCount + 1
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 2
-			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot;  &lt;h2 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h2&gt;&quot;
 		Case &quot;heading 3&quot;
@@ -610,7 +635,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			iTocCount = iTocCount + 1
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 3
-			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot;  &lt;h3 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h3&gt;&quot;
 		Case &quot;heading 4&quot;
@@ -618,7 +644,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			iTocCount = iTocCount + 1 
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 4
-			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot;  &lt;h4 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h4&gt;&quot;
 		Case &quot;heading 5&quot;
@@ -626,7 +653,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			iTocCount = iTocCount + 1
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 5
-			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 			sStr = &quot;  &lt;h5 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h5&gt;&quot;
 		Case &quot;heading 6&quot;,&quot;heading 7&quot;,&quot;heading 8&quot;,&quot;heading 9&quot;, &quot;heading 10&quot;
@@ -634,7 +662,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			iTocCount = iTocCount + 1
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 6
-			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 &apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot; &lt;h6 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h6&gt;&quot;
 		Case &quot;title&quot; 

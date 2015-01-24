@@ -147,6 +147,10 @@
 &apos;   image directory renamed to images
 &apos;   added title in content header
 &apos;   added : fonts in local fonts directory will be copied to EPubFolder
+&apos;			replaced default content name to content_'
+&apos;   support for xhtml-file name based on header text down to a given level
+&apos;			- at the moment hard coded to 3
+&apos;   - added Valid_File_Name function to clean Header Text of possible invalid characters
 &apos;			
 &apos;
 &apos;			
@@ -174,7 +178,9 @@ Option Explicit
 	Public oDoc, fenDoc, oText, oBar As object
 	Public myUUIDv4 As String			&apos;a random generated UUID number used as unique ID
 	Public MetaAuthor, MetaTitle, MetaLanguage, MetaPublisher, MetaYear As String
-	Public sTOC (10000,3) As String		&apos;TOC entry list: 1:text 2:level 3:split#
+	Public sTOC (10000,5) As String		&apos;TOC entry list: 1:text 2:level 3:split# 4: cover_title 5: header_link
+ Public i_header_logic As Integer			&apos;Herder logic for book title as file name. 0='cover_'
+ Const cover_title As String = &quot;cover_&quot;
 	Public iTocLevel As Integer			&apos;TOC item level
 	Public iTOCcount As Integer			&apos;TOC item number
 	Public iSplitCount As Integer		&apos;Split count for jump reference
@@ -219,7 +225,7 @@ Option Explicit
 	BottomBorder As Integer
 	End Type
 	Public StyleList(30) As MyStyle
-    Global sCSSimageRules As String
+ Global sCSSimageRules As String
 	
 &apos;==================================================================
 &apos;========================== MAIN ROUTINE ==========================	
@@ -250,7 +256,9 @@ Sub writer2epubMain
 	&apos;===================================
 		
 	initRegistry			&apos;Load or create the registry to store pref values
-	
+ i_header_logic=0 &apos;Original numbering logic
+ &apos;TODO: dialog to set book-chapter level
+	i_header_logic=3
 	If myPrefs.getPropertyValue(&quot;KeepWF&quot;) = True then
 		bKeepWorkingFiles = TRUE
 	Else
@@ -635,6 +643,7 @@ Sub CreateHtmlTocFile(MyEpub As string)
 		Dim myTab, longTab As String
 		Dim bLevelFound As Boolean
 		Dim NPtArray(20) As Integer 
+  Dim File_Name_Xhtml As String 
 		
 		oBar.start(createTocMSG,100)
 		oBar.value = 60
@@ -663,6 +672,7 @@ Sub CreateHtmlTocFile(MyEpub As string)
 	
 		Do While sTOC(i, 3) &lt;&gt; &quot;&quot;			
 			If sTOC(i, 1) = &quot;&quot; Then sTOC(i, 1) =&quot;*&quot; 	
+   File_Name_Xhtml=sTOC (iTocCount, 4)
 			oOutputStream.writeString( &quot;   &lt;p class=&quot;&quot;index&quot; &amp; sTOC(i,2) &amp; &quot;&quot;&quot;&gt;&lt;a href=&quot;&quot;&quot; &amp; sTOC(i, 3) &amp; &quot;#heading_id_&quot; &amp; i &amp; &quot;&quot;&quot;&gt;&quot; &amp; sTOC(i, 1) &amp; &quot;&lt;/a&gt;&lt;/p&gt;&lt;br/&gt;&quot; &amp; CR )	
 			NPtArray( sTOC(i, 2))=NPtArray( sTOC(i, 2))+1	
 			i = i + 1
