@@ -723,8 +723,8 @@ Sub CreateContentOpfFile (MyEpub As string)
 	oOutputStream.writeString( &quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;UTF-8&quot;&quot;?&gt;&quot; &amp; CR )
 	oOutputStream.writeString( &quot;&lt;package xmlns=&quot;&quot;http://www.idpf.org/2007/opf&quot;&quot; unique-identifier=&quot;&quot;BookID&quot;&quot; version=&quot;&quot;2.0&quot;&quot;&gt;&quot; &amp; CR )
 	oOutputStream.writeString(GetMetaXmlBlock(sMyAppName, sVersion,  myUUIDv4 ))
-	oOutputStream.writeString( &quot;  &lt;manifest&gt;&quot; &amp; CR )
-	oOutputStream.writeString( &quot;   &lt;item id=&quot;&quot;ncx&quot;&quot; href=&quot;&quot;toc.ncx&quot;&quot; media-type=&quot;&quot;application/x-dtbncx+xml&quot;&quot;/&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot; &lt;manifest&gt;&quot; &amp; CR )
+	oOutputStream.writeString( &quot;  &lt;item id=&quot;&quot;ncx&quot;&quot; href=&quot;&quot;toc.ncx&quot;&quot; media-type=&quot;&quot;application/x-dtbncx+xml&quot;&quot;/&gt;&quot; &amp; CR )
 	If FileExists(MyEpubFolder &amp; &quot;/images/&quot;) Then
 		MaxFiles = 1
 		NextFile = Dir(MyEpubFolder &amp; &quot;/images/&quot;)
