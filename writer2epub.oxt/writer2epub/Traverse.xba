@@ -44,12 +44,13 @@ Sub TraverseText( TraverseSimulate As Boolean)
 	Dim curListLevel As Integer
 	Dim prevListLevel As Integer	
  Const replace_title As String = &quot;#replace_title#&quot;
+ Const cover_title_default As String = &quot;cover_&quot;
  Dim File_Name_Xhtml As String 
  Dim File_Name_Xhtml_Base As String 
 	
 	oBMarks=oDoc.getBookmarks
 	&apos;clean sToc content
-	ReDim sTOC (10000,5) As String &apos;TOC entry list: 1:text 2:level 3:split# 4: cover_title 5: header_link
+	ReDim sTOC (10000,5) As String &apos;TOC entry list: 1:text 2:level 3:split# 4: cover_title_default 5: header_link
 	iTocLevel=0
 	iTOCcount=0
 	MyListType = &quot;&quot;
@@ -65,7 +66,6 @@ Sub TraverseText( TraverseSimulate As Boolean)
 		ReDim oBMarksfiles(oBMarks.Count-1) As String
 		ReDim bkMarksCurPageBuffer(oBMarks.Count-1) As String
 	EndIf
-
 	MaxLength = val(getPrefValue (&quot;SplitFilesEvery&quot;))*1000 &apos; Max Length of an xhtml file, used to split files
 	CountLength = 0
 	
@@ -192,22 +192,25 @@ Sub TraverseText( TraverseSimulate As Boolean)
    sParEx = fnExportParagraph(oPar,TraverseSimulate)
    If sTOC (iTocCount, 1) &lt;&gt; replace_TitleText Then
     replace_TitleText=sTOC (iTocCount, 1) 
-    If i_header_logic = 0 Then
-     File_Name_Xhtml_Base=cover_title
+    If i_header_book = 0 Then
+     File_Name_Xhtml_Base=cover_title_default
      File_Name_Xhtml=MyEpubFolder &amp; &quot;/text/&quot;&amp; File_Name_Xhtml_Base
      sTOC (iTocCount, 4)=File_Name_Xhtml
     Else
-     If 	sTOC (iTocCount, 2) &lt;= i_header_logic Then
+     If 	sTOC (iTocCount, 2) &lt;= i_header_book Then
       iSplitNumber = 0	
       File_Name_Xhtml_Base=Valid_File_Name(replace_TitleText) &amp; &quot;_&quot; 
       File_Name_Xhtml=MyEpubFolder &amp; &quot;/text/&quot;&amp; File_Name_Xhtml_Base
       sTOC (iTocCount, 4)=File_Name_Xhtml
+      sTOC (iTocCount, 5) = Format((iSplitNumber),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
      End If
     End If
     if replace_StartPageCode = &quot;&quot; Then
      replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
+     iSplitNumber = 1
+     sTOC (iTocCount, 5) = Format((iSplitNumber),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
      If TraverseSimulate=False Then 
-      vOutputData = oOutputAccess.openFileWrite(sTOC (iTocCount, 4) &amp; Format(iSplitNumber,&quot;0000&quot;) &amp; &quot;.xhtml&quot;)
+      vOutputData = oOutputAccess.openFileWrite(sTOC (iTocCount, 4) &amp; sTOC (iTocCount, 5))
       oOutputStream.setOutputStream(vOutputData)
       oOutputStream.setEncoding(&quot;UTF-8&quot;)
       oOutputStream.writeString( replace_StartPageCode &amp; CR )
@@ -618,8 +621,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 1
 			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			&apos;sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			&apos;sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 			sStr = &quot;  &lt;h1 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h1&gt;&quot; 
 		Case &quot;heading 2&quot;
 			If iTocLevel &lt; 2 Then iTocLevel = 2
@@ -627,8 +630,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 2
 			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			&apos;sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			&apos;sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot;  &lt;h2 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h2&gt;&quot;
 		Case &quot;heading 3&quot;
 			If iTocLevel &lt; 3 Then iTocLevel = 3
@@ -636,8 +639,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 3
 			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			&apos;sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			&apos;sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot;  &lt;h3 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h3&gt;&quot;
 		Case &quot;heading 4&quot;
 			If iTocLevel &lt; 4 Then iTocLevel = 4
@@ -645,8 +648,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 4
 			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			&apos;sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			&apos;sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot;  &lt;h4 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h4&gt;&quot;
 		Case &quot;heading 5&quot;
 			If iTocLevel &lt; 5 Then iTocLevel = 5
@@ -654,8 +657,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 5
 			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			&apos;sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+			&apos;sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
 			sStr = &quot;  &lt;h5 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h5&gt;&quot;
 		Case &quot;heading 6&quot;,&quot;heading 7&quot;,&quot;heading 8&quot;,&quot;heading 9&quot;, &quot;heading 10&quot;
 			If iTocLevel &lt; 6 Then iTocLevel = 6
@@ -663,8 +666,8 @@ Function fnExportParaStyle(oPar As Object, sStr As String) As string
 			sTOC (iTocCount, 1) = CleanTags(sStr)
 			sTOC (iTocCount, 2) = 6
 			sTOC (iTocCount, 5) = Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
-&apos;			sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
-&apos;			sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			&apos;sTOC (iTocCount, 3) = &quot;content&quot; &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
+			&apos;sTOC (iTocCount, 3) = CleanTags(sStr) &amp; Format((iSplitNumber + SplitIncrease),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
 			sStr = &quot; &lt;h6 id=&quot;&quot;heading_id_&quot; &amp; iTocCount &amp; &quot;&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/h6&gt;&quot;
 		Case &quot;title&quot; 
 			sStr = &quot;  &lt;p class=&quot;&quot;title&quot;&quot;&gt;&quot; &amp; sStr &amp; &quot;&lt;/p&gt;&quot;

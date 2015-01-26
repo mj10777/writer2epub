@@ -148,10 +148,10 @@
 &apos;   added title in content header
 &apos;   added : fonts in local fonts directory will be copied to EPubFolder
 &apos;			replaced default content name to content_'
-&apos;   support for xhtml-file name based on header text down to a given level
+&apos;   support for xhtml-file name based on header text down to a given level [i_header_book]
 &apos;			- at the moment hard coded to 3
 &apos;   - added Valid_File_Name function to clean Header Text of possible invalid characters
-&apos;			
+&apos;			- dialog pref for Header Book value
 &apos;
 &apos;			
 &apos;
@@ -179,8 +179,7 @@ Option Explicit
 	Public myUUIDv4 As String			&apos;a random generated UUID number used as unique ID
 	Public MetaAuthor, MetaTitle, MetaLanguage, MetaPublisher, MetaYear As String
 	Public sTOC (10000,5) As String		&apos;TOC entry list: 1:text 2:level 3:split# 4: cover_title 5: header_link
- Public i_header_logic As Integer			&apos;Header logic for book title as file name. 0='cover_'
- Const cover_title As String = &quot;cover_&quot;
+ Public i_header_book As Integer			&apos;Header logic for book title as file name. 0=&apos;cover_&apos; [cover_title_default]
 	Public iTocLevel As Integer			&apos;TOC item level
 	Public iTOCcount As Integer			&apos;TOC item number
 	Public iSplitCount As Integer		&apos;Split count for jump reference
@@ -256,9 +255,10 @@ Sub writer2epubMain
 	&apos;===================================
 		
 	initRegistry			&apos;Load or create the registry to store pref values
- i_header_logic=0 &apos;Original numbering logic
- &apos;TODO: dialog to set book-chapter level
-	i_header_logic=3
+	i_header_book=0 &apos;Original numbering logic
+	&apos;read: dialog to set book-chapter level [done in TraverseText]
+	i_header_book=getPrefValue(&quot;HeaderBook&quot;)	
+	myLog = myLog &amp; CR &amp; &quot;✔ HeaderBook Setting: [&quot;	&amp; i_header_book &amp;&quot;]&quot;	
 	If myPrefs.getPropertyValue(&quot;KeepWF&quot;) = True then
 		bKeepWorkingFiles = TRUE
 	Else

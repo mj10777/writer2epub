@@ -753,9 +753,10 @@ Function getPrefValue(myPref As String) As String
 	PV = UDP.getPropertyValues()
 	getPrefValue = &quot;&quot;
 	For i = 0 to uBound(PV)
-		If InStr(PV(i).Name, PrefPropKeyPrefix &amp; myPref)= 1  Then getPrefValue = PV(i).Value
+		&apos; If InStr(PV(i).Name, PrefPropKeyPrefix &amp; myPref)= 1  Then getPrefValue = PV(i).Value
+ 	If PV(i).Name = PrefPropKeyPrefix &amp; myPref Then getPrefValue = PV(i).Value
 	Next
-&apos;	If getMetaValue =&quot;&quot; then msgbox &quot;Metadata &quot;&quot;&quot; &amp; myMeta &amp; &quot; missing!&quot;
+&apos;	If getPrefValue =&quot;&quot; then msgbox &quot;Metadata &quot;&quot;&quot; &amp; myPref &amp; &quot; missing!&quot;
 End Function
 
 Sub CoverChoose

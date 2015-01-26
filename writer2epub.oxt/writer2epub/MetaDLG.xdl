@@ -198,7 +198,9 @@
   <dlg:img dlg:style-id="2" dlg:id="background4" dlg:tab-index="84" dlg:left="362" dlg:top="146" dlg:width="6" dlg:height="112" dlg:page="1" dlg:help-text="&amp;1121.MetaDLG.background4.HelpText"/>
   <dlg:numericfield dlg:id="w2e_PrefWidows" dlg:tab-index="10" dlg:left="144" dlg:top="203" dlg:width="30" dlg:height="11" dlg:page="2" dlg:help-text="&amp;1140.MetaDLG.w2e_PrefWidows.HelpText" dlg:decimal-accuracy="0" dlg:value="2" dlg:value-min="0" dlg:value-max="10" dlg:spin="true"/>
   <dlg:numericfield dlg:id="w2e_PrefOrphans" dlg:tab-index="11" dlg:left="144" dlg:top="217" dlg:width="30" dlg:height="11" dlg:page="2" dlg:help-text="&amp;1142.MetaDLG.w2e_PrefOrphans.HelpText" dlg:decimal-accuracy="0" dlg:value="2" dlg:value-min="0" dlg:value-max="10" dlg:spin="true"/>
-  <dlg:text dlg:id="Label15" dlg:tab-index="85" dlg:left="64" dlg:top="203" dlg:width="58" dlg:height="11" dlg:page="2" dlg:help-text="&amp;1143.MetaDLG.Label15.HelpText" dlg:value="Widows (Lines)"/>
+  <dlg:text dlg:id="Label15" dlg:tab-index="85" dlg:left="64" dlg:top="203" dlg:width="58" dlg:height="11" dlg:page="2" dlg:help-text="&amp;1143.MetaDLG.Label15.HelpText" dlg:value="Windows (Lines)"/>
   <dlg:text dlg:id="Label17" dlg:tab-index="86" dlg:left="64" dlg:top="217" dlg:width="59" dlg:height="11" dlg:page="2" dlg:help-text="&amp;1145.MetaDLG.Label17.HelpText" dlg:value="Orphans (Lines)"/>
+  <dlg:numericfield dlg:id="w2e_PrefHeaderBook" dlg:tab-index="87" dlg:left="144" dlg:top="231" dlg:width="30" dlg:height="11" dlg:page="2" dlg:help-text="&amp;1141.MetaDLG.w2e_PrefHeaderBook.HelpText" dlg:decimal-accuracy="0" dlg:value="0" dlg:value-min="0" dlg:value-max="6" dlg:spin="true"/>
+  <dlg:text dlg:id="HeaderBookText" dlg:tab-index="88" dlg:left="64" dlg:top="231" dlg:width="58" dlg:height="11" dlg:page="2" dlg:help-text="&amp;1141.MetaDLG.w2e_PrefHeaderBook.HelpText" dlg:value="Header Book Level"/>
  </dlg:bulletinboard>
 </dlg:window>
