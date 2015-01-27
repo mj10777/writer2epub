@@ -152,6 +152,9 @@
 &apos;			- at the moment hard coded to 3
 &apos;   - added Valid_File_Name function to clean Header Text of possible invalid characters
 &apos;			- dialog pref for Header Book value
+&apos;   - added a possible book-number logic for file-names - by default is off
+&apos;			
+&apos;
 &apos;
 &apos;			
 &apos;
@@ -179,7 +182,8 @@ Option Explicit
 	Public myUUIDv4 As String			&apos;a random generated UUID number used as unique ID
 	Public MetaAuthor, MetaTitle, MetaLanguage, MetaPublisher, MetaYear As String
 	Public sTOC (10000,5) As String		&apos;TOC entry list: 1:text 2:level 3:split# 4: cover_title 5: header_link
- Public i_header_book As Integer			&apos;Header logic for book title as file name. 0=&apos;cover_&apos; [cover_title_default]
+	Public i_header_book As Integer			&apos;Header logic for book title as file name. 0=&apos;cover_&apos; [cover_title_default]
+	Public i_book_nr As Integer			&apos;Add Book Number to file name 0=no [default], 1=yes
 	Public iTocLevel As Integer			&apos;TOC item level
 	Public iTOCcount As Integer			&apos;TOC item number
 	Public iSplitCount As Integer		&apos;Split count for jump reference
@@ -207,10 +211,10 @@ Option Explicit
 	CharPosture As Integer			&apos;
 	CharStrikeout As Integer		&apos;
 	CharUnderline As Integer		&apos;
-&apos;	DropCapFormatCount As Integer
-&apos;	DropCapFormatDistance As Integer
-&apos;	DropCapFormatLines As Integer
-&apos;	DropCapWholeWord As Boolean
+	&apos;	DropCapFormatCount As Integer
+	&apos;	DropCapFormatDistance As Integer
+	&apos;	DropCapFormatLines As Integer
+	&apos;	DropCapWholeWord As Boolean
 	ParaAdjust As Integer				&apos;align 0=left 1=right 2justify 3 center
 	ParaBackColor As Long				&apos;background color
 	ParaLeftMargin As Long			&apos;left margin in 1/100 mm
@@ -224,7 +228,7 @@ Option Explicit
 	BottomBorder As Integer
 	End Type
 	Public StyleList(30) As MyStyle
- Global sCSSimageRules As String
+	Global sCSSimageRules As String
 	
 &apos;==================================================================
 &apos;========================== MAIN ROUTINE ==========================	
@@ -256,8 +260,10 @@ Sub writer2epubMain
 		
 	initRegistry			&apos;Load or create the registry to store pref values
 	i_header_book=0 &apos;Original numbering logic
+	i_book_nr=0
 	&apos;read: dialog to set book-chapter level [done in TraverseText]
 	i_header_book=getPrefValue(&quot;HeaderBook&quot;)	
+	&apos;i_book_nr=1
 	myLog = myLog &amp; CR &amp; &quot;✔ HeaderBook Setting: [&quot;	&amp; i_header_book &amp;&quot;]&quot;	
 	If myPrefs.getPropertyValue(&quot;KeepWF&quot;) = True then
 		bKeepWorkingFiles = TRUE
@@ -269,7 +275,7 @@ Sub writer2epubMain
 	
 	WritingMode = 0
 	bRuby = FALSE
-  	isCoverPresent = false
+	isCoverPresent = false
   	
 	InitLocal
 
@@ -347,7 +353,7 @@ Sub writer2epubMain
 		Dlg.getControl(&quot;Logo&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/Writer2Epub-200x120.jpg&quot;)	
 		Dlg.getControl(&quot;Donate&quot;).Model.ImageURL = (extensionLocation() &amp; &quot;/icons/donate_btn.gif&quot;)
 		Dlg.Execute()     
-	    dlg.dispose()
+  dlg.dispose()
 	End If
 		
 Exit Sub

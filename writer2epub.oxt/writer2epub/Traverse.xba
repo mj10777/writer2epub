@@ -28,6 +28,7 @@
 	Private bkMarksCurPageBuffer(0) As String
 	Private EmptyParagraphBefore As Boolean
 	Private prevParWasListItem As Boolean
+	Private i_Book_Number As Integer
 
 Sub TraverseText( TraverseSimulate As Boolean) 
 &apos;From: http://www.pitonyak.org/AndrewMacro.odt, Listing 7.52: Enumerate paragraph level text content. 
@@ -43,10 +44,11 @@ Sub TraverseText( TraverseSimulate As Boolean)
 	Dim MyListType As String
 	Dim curListLevel As Integer
 	Dim prevListLevel As Integer	
- Const replace_title As String = &quot;#replace_title#&quot;
- Const cover_title_default As String = &quot;cover_&quot;
- Dim File_Name_Xhtml As String 
- Dim File_Name_Xhtml_Base As String 
+	Const replace_title As String = &quot;#replace_title#&quot;
+	Const cover_title_default As String = &quot;cover_&quot;
+	Dim File_Name_Xhtml As String 
+	Dim File_Name_Xhtml_Base As String 
+	Dim Book_Number As String 
 	
 	oBMarks=oDoc.getBookmarks
 	&apos;clean sToc content
@@ -57,6 +59,8 @@ Sub TraverseText( TraverseSimulate As Boolean)
 	EmptyParagraphBefore = True
 	curListLevel = 0
 	prevListLevel = 0
+	i_Book_Number = 0
+	Book_Number=&quot;&quot;
 
 	If TraverseSimulate=True Then
 		If oBMarks.Count = 0 Then
@@ -133,8 +137,8 @@ Sub TraverseText( TraverseSimulate As Boolean)
 		&apos;oOutputStream.setOutputStream(vOutputData)
 		&apos;oOutputStream.setEncoding(&quot;UTF-8&quot;)
 		&apos;oOutputStream.writeString( sStartPageCode &amp; CR )
-  replace_StartPageCode=&quot;&quot;
-  replace_TitleText=&quot;&quot;
+		replace_StartPageCode=&quot;&quot;
+		replace_TitleText=&quot;&quot;
 	EndIf
 	&apos;---- Show the progress bar
 	nPara = oDoc.ParagraphCount
@@ -197,17 +201,24 @@ Sub TraverseText( TraverseSimulate As Boolean)
      File_Name_Xhtml=MyEpubFolder &amp; &quot;/text/&quot;&amp; File_Name_Xhtml_Base
      sTOC (iTocCount, 4)=File_Name_Xhtml
     Else
-     If 	sTOC (iTocCount, 2) &lt;= i_header_book Then
+     If sTOC (iTocCount, 2) &lt;= i_header_book Then
       iSplitNumber = 0	
-      File_Name_Xhtml_Base=Valid_File_Name(replace_TitleText) &amp; &quot;_&quot; 
+      i_Book_Number=i_Book_Number+1
+      If i_book_nr = 1 Then
+       Book_Number=Format((i_Book_Number),&quot;00&quot;) &amp; &quot;.&quot;
+      End If
+      File_Name_Xhtml_Base=Book_Number &amp; Valid_File_Name(replace_TitleText) &amp; &quot;_&quot; 
       File_Name_Xhtml=MyEpubFolder &amp; &quot;/text/&quot;&amp; File_Name_Xhtml_Base
       sTOC (iTocCount, 4)=File_Name_Xhtml
-      sTOC (iTocCount, 5) = Format((iSplitNumber),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
+      sTOC (iTocCount, 5) = Format((iSplitNumber+1),&quot;0000&quot;) &amp; &quot;.xhtml&quot; 
      End If
     End If
     if replace_StartPageCode = &quot;&quot; Then
      replace_StartPageCode = Replace (sStartPageCode, replace_title, replace_TitleText)
      iSplitNumber = 1
+     File_Name_Xhtml_Base=Book_Number &amp; Valid_File_Name(replace_TitleText) &amp; &quot;_&quot; 
+     File_Name_Xhtml=MyEpubFolder &amp; &quot;/text/&quot;&amp; File_Name_Xhtml_Base
+     sTOC (iTocCount, 4)=File_Name_Xhtml
      sTOC (iTocCount, 5) = Format((iSplitNumber),&quot;0000&quot;) &amp; &quot;.xhtml&quot;
      If TraverseSimulate=False Then 
       vOutputData = oOutputAccess.openFileWrite(sTOC (iTocCount, 4) &amp; sTOC (iTocCount, 5))
